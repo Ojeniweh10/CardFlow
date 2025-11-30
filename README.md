@@ -38,6 +38,7 @@ CardFlow is a fintech platform that enables businesses and individuals to issue 
 ## ✨ Features
 
 ### Core Capabilities
+
 - 🔐 **Secure Authentication** - JWT-based auth with refresh tokens and optional MFA
 - 👤 **User Management** - Comprehensive user registration and profile management
 - ✅ **KYC/KYB Verification** - Automated identity verification with third-party provider integration
@@ -48,6 +49,7 @@ CardFlow is a fintech platform that enables businesses and individuals to issue 
 - 📝 **Audit Logging** - Comprehensive audit trails for compliance
 
 ### Security & Compliance
+
 - ✅ PCI-DSS compliant (no storage of full card numbers)
 - ✅ GDPR compliant with data protection measures
 - ✅ AML/KYC compliance
@@ -57,6 +59,7 @@ CardFlow is a fintech platform that enables businesses and individuals to issue 
 - ✅ RBAC (Role-Based Access Control)
 
 ### Performance & Reliability
+
 - ⚡ Sub-500ms API response time (95th percentile)
 - 🔄 Horizontal scalability
 - 🛡️ Circuit breaker pattern for external APIs
@@ -100,6 +103,7 @@ CardFlow follows a **clean, layered architecture** pattern:
 ```
 
 ### Design Patterns
+
 - **Repository Pattern** - Data access abstraction
 - **Service Layer Pattern** - Business logic encapsulation
 - **Factory Pattern** - Object creation
@@ -112,16 +116,18 @@ CardFlow follows a **clean, layered architecture** pattern:
 ## 🛠️ Tech Stack
 
 ### Core Technologies
-| Component | Technology | Version |
-|-----------|------------|---------|
-| Language | Go (Golang) | 1.21+ |
-| Web Framework | Fiber | 2.51+ |
-| Database | PostgreSQL | 15+ |
-| Cache/Queue | Redis | 7.2+ |
-| ORM | GORM | 1.25+ |
-| Migration | golang-migrate | 4.16+ |
+
+| Component     | Technology     | Version |
+| ------------- | -------------- | ------- |
+| Language      | Go (Golang)    | 1.21+   |
+| Web Framework | Fiber          | 2.51+   |
+| Database      | PostgreSQL     | 15+     |
+| Cache/Queue   | Redis          | 7.2+    |
+| ORM           | GORM           | 1.25+   |
+| Migration     | golang-migrate | 4.16+   |
 
 ### Key Libraries
+
 ```
 - github.com/gofiber/fiber/v2          # High-performance web framework
 - gorm.io/gorm                         # ORM
@@ -135,6 +141,7 @@ CardFlow follows a **clean, layered architecture** pattern:
 ```
 
 ### Infrastructure
+
 - **Containerization**: Docker
 - **Orchestration**: Kubernetes
 - **CI/CD**: GitHub Actions
@@ -160,24 +167,27 @@ Before you begin, ensure you have the following installed:
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/cardflow.git
    cd cardflow
    ```
 
 2. **Install dependencies**
+
    ```bash
    go mod download
    ```
 
 3. **Install development tools**
+
    ```bash
    # Install golang-migrate for database migrations
    go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-   
+
    # Install golangci-lint for code quality
    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-   
+
    # Install swag for API documentation
    go install github.com/swaggo/swag/cmd/swag@latest
    ```
@@ -185,20 +195,22 @@ Before you begin, ensure you have the following installed:
 ### Configuration
 
 1. **Create environment file**
+
    ```bash
    cp .env.example .env
    ```
 
 2. **Configure environment variables**
-   
+
    Edit `.env` with your configuration:
+
    ```bash
    # Application
    APP_ENV=development
    APP_PORT=8080
    APP_NAME=CardFlow
    APP_LOG_LEVEL=debug
-   
+
    # Database
    DB_HOST=localhost
    DB_PORT=5432
@@ -206,45 +218,45 @@ Before you begin, ensure you have the following installed:
    DB_USER=cardflow
    DB_PASSWORD=your_secure_password
    DB_SSL_MODE=disable
-   
+
    # Redis
    REDIS_HOST=localhost
    REDIS_PORT=6379
    REDIS_PASSWORD=
    REDIS_DB=0
-   
+
    # JWT
    JWT_SECRET=your_jwt_secret_min_32_chars_long
    JWT_ACCESS_EXPIRY=900           # 15 minutes in seconds
    JWT_REFRESH_EXPIRY=604800       # 7 days in seconds
-   
+
    # Merchant Partner API
    MERCHANT_API_URL=https://sandbox.merchant.com
    MERCHANT_API_KEY=your_merchant_api_key
    MERCHANT_API_SECRET=your_merchant_api_secret
    MERCHANT_WEBHOOK_SECRET=your_webhook_secret
-   
+
    # KYC Provider (korapay example)
    KYC_PROVIDER=onfido
    KYC_API_URL=https://api.korapay.com/v3
    KYC_API_TOKEN=your_korapay_api_token
    KYC_WEBHOOK_TOKEN=your_korapat_webhook_token
-   
+
    # Email Service (SendGrid example)
    EMAIL_PROVIDER=sendgrid
    EMAIL_API_KEY=your_sendgrid_api_key
    EMAIL_FROM_ADDRESS=noreply@cardflow.com
    EMAIL_FROM_NAME=CardFlow
-   
+
    # SMS Service (Twilio example)
    SMS_PROVIDER=twilio
    SMS_ACCOUNT_SID=your_twilio_account_sid
    SMS_AUTH_TOKEN=your_twilio_auth_token
    SMS_FROM_NUMBER=+1234567890
-   
+
    # Encryption
    ENCRYPTION_KEY=your_32_byte_encryption_key_here
-   
+
    # Rate Limiting
    RATE_LIMIT_ENABLED=true
    RATE_LIMIT_MAX=100
@@ -254,15 +266,17 @@ Before you begin, ensure you have the following installed:
 ### Database Setup
 
 1. **Create the database**
+
    ```bash
    createdb cardflow_db
    ```
 
 2. **Run migrations**
+
    ```bash
    # Using make
    make migrate-up
-   
+
    # Or directly
    migrate -path ./migrations \
            -database "postgresql://cardflow:password@localhost:5432/cardflow_dev?sslmode=disable" \
@@ -277,16 +291,19 @@ Before you begin, ensure you have the following installed:
 ### Running the Application
 
 #### Using Go directly
+
 ```bash
 go run cmd/api/main.go
 ```
 
 #### Using Make
+
 ```bash
 make run
 ```
 
 #### Using Docker Compose (Recommended for development)
+
 ```bash
 # Start all services (API, PostgreSQL, Redis)
 docker-compose up -d
@@ -316,6 +333,7 @@ Once the application is running, access the interactive API documentation:
 ### Quick API Reference
 
 #### Authentication
+
 ```bash
 # Register a new user
 POST /api/v1/auth/register
@@ -349,6 +367,7 @@ Content-Type: application/json
 ```
 
 #### Card Management
+
 ```bash
 # Issue a new card
 POST /api/v1/cards
@@ -379,6 +398,7 @@ Authorization: Bearer {access_token}
 ```
 
 #### Transactions
+
 ```bash
 # List transactions
 GET /api/v1/transactions?page=1&limit=50&card_id={card_id}
@@ -477,6 +497,7 @@ cardflow-backend/
 ### Running Tests
 
 #### Unit Tests
+
 ```bash
 # Run all tests
 make test
@@ -492,12 +513,14 @@ go test ./internal/services/...
 ```
 
 #### Integration Tests
+
 ```bash
 # Run integration tests (requires running services)
 make test-integration
 ```
 
 #### Test Coverage Report
+
 ```bash
 # Generate HTML coverage report
 make coverage-html
@@ -509,6 +532,7 @@ open coverage.html
 ### Code Quality
 
 #### Linting
+
 ```bash
 # Run linter
 make lint
@@ -518,6 +542,7 @@ make lint-fix
 ```
 
 #### Code Formatting
+
 ```bash
 # Format code
 make fmt
@@ -527,6 +552,7 @@ make fmt-check
 ```
 
 #### Generate API Documentation
+
 ```bash
 # Generate Swagger docs
 make swagger
@@ -537,11 +563,13 @@ make swagger
 ### Database Migrations
 
 #### Create a new migration
+
 ```bash
 make migrate-create name=add_new_table
 ```
 
 #### Apply migrations
+
 ```bash
 # Apply all pending migrations
 make migrate-up
@@ -557,6 +585,7 @@ make migrate-reset
 ```
 
 #### Check migration status
+
 ```bash
 make migrate-status
 ```
@@ -583,11 +612,13 @@ make clean             # Clean build artifacts
 ### Docker Deployment
 
 #### Build Docker image
+
 ```bash
 docker build -t cardflow-api:latest -f deployments/docker/Dockerfile .
 ```
 
 #### Run with Docker Compose
+
 ```bash
 docker-compose -f docker-compose.prod.yml up -d
 ```
@@ -595,11 +626,13 @@ docker-compose -f docker-compose.prod.yml up -d
 ### Kubernetes Deployment
 
 #### Prerequisites
+
 - Kubernetes cluster (1.25+)
 - kubectl configured
 - Helm (optional)
 
 #### Deploy to Kubernetes
+
 ```bash
 # Create namespace
 kubectl create namespace cardflow
@@ -616,6 +649,7 @@ kubectl logs -f deployment/cardflow-api -n cardflow
 ```
 
 #### Using Helm (if available)
+
 ```bash
 helm install cardflow ./deployments/helm/cardflow \
   --namespace cardflow \
@@ -635,7 +669,6 @@ make deploy-staging
 # Production (requires manual approval)
 make deploy-prod
 ```
-
 
 ---
 
@@ -665,7 +698,6 @@ If you discover a security vulnerability, please email ojeniwehalexander@gmail.c
 - [ ] Monitoring and alerting configured
 - [ ] Regular security audits scheduled
 - [ ] Incident response plan documented
-
 
 ---
 
@@ -738,16 +770,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👥 Team & Support
 
 ### Core Team
+
 - **Project Lead**: [Alexander Ojeniweh](mailto:ojeniwehalexander@gmail.com)
 - **Backend Lead**: [Alexander Ojeniweh](mailto:ojeniwehalexander@gmail.com)
 
 ### Support Channels
+
 - 📧 **Email**: ojeniwehalexander@gmail.com
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/Ojeniweh10/CardFlow/issues)
 
 ### Acknowledgments
 
 Special thanks to:
+
 - The Fiber framework team
 - The GORM maintainers
 - All our contributors
@@ -761,24 +796,28 @@ Special thanks to:
 ### Roadmap
 
 #### ✅ Phase 1: Foundation (Completed)
+
 - [x] Core authentication system
 - [x] User management
 - [x] Database setup and migrations
 - [x] Basic CI/CD pipeline
 
 #### 🚧 Phase 2: Core Features (In Progress)
+
 - [x] KYC integration
 - [x] Card issuance
 - [ ] Transaction processing
 - [ ] Notification service
 
 #### 📅 Phase 3: Enhancement (Planned Q2 2026)
+
 - [ ] Multi-currency support
 - [ ] Advanced fraud detection
 - [ ] Real-time analytics dashboard
 - [ ] Mobile SDK
 
 #### 📅 Phase 4: Scale (Planned Q3 2026)
+
 - [ ] Multi-region deployment
 - [ ] Advanced caching strategies
 - [ ] Performance optimizations
@@ -794,10 +833,3 @@ Special thanks to:
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/Ojeniweh10/CardFlow)
 
 ---
-
-<div align="center">
-
-
-Made with ❤️ by the CardFlow Team
-
-</div>
