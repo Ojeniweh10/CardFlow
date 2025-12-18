@@ -7,6 +7,8 @@ CREATE TABLE users (
     phone VARCHAR(20),
     status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'closed')),
     email_verified BOOLEAN DEFAULT FALSE,
+    otp VARCHAR(6),
+    otp_expires_at TIMESTAMP,
     mfa_enabled BOOLEAN DEFAULT FALSE,
     mfa_secret VARCHAR(255),
     last_login_at TIMESTAMP,
@@ -17,6 +19,8 @@ CREATE TABLE users (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_users_created_at ON users(created_at);
+
+
 
 CREATE TABLE admins (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
     phone VARCHAR(20),
     status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'closed')),
     email_verified BOOLEAN DEFAULT FALSE,
+    otp VARCHAR(6),
+    otp_expires_at TIMESTAMP,
     mfa_enabled BOOLEAN DEFAULT FALSE,
     mfa_secret VARCHAR(255),
     last_login_at TIMESTAMP,

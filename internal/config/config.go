@@ -26,3 +26,6 @@ func Db() dbConfig {
 
 
 var GatewaySecret = os.Getenv("GATEWAY_SECRET")
+var JwtSecret = os.Getenv("JWT_SECRET")
+var AppPassword = os.Getenv("APP_PASSWORD")
+var AppEmail = os.Getenv("APP_EMAIL")

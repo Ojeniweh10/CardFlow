@@ -23,7 +23,7 @@ func main() {
 
 	// 2. Initialize Fiber app
 	app := fiber.New(fiber.Config{
-		AppName: "CardFlow User Service",
+		AppName: "CardFlow Service",
 	})
 
 	// 3. Logger middleware
@@ -50,7 +50,7 @@ func main() {
 	})
 
 	// 6. Route registration (dependency injection)
-	routes.RegisterRoutes(app, db)
+	routes.Routes(app, db)
 
 	// 7. 404 handler
 	app.All("*", func(c *fiber.Ctx) error {
