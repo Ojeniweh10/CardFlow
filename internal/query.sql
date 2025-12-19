@@ -1,3 +1,6 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -5,9 +8,10 @@ CREATE TABLE users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
-    role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('user', 'admin', 'compliance_officer')),
     status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'closed')),
     email_verified BOOLEAN DEFAULT FALSE,
+    otp VARCHAR(6),
+    otp_expires_at TIMESTAMP,
     mfa_enabled BOOLEAN DEFAULT FALSE,
     mfa_secret VARCHAR(255),
     last_login_at TIMESTAMP,
@@ -18,6 +22,29 @@ CREATE TABLE users (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_users_created_at ON users(created_at);
+
+
+
+CREATE TABLE admins (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    role VARCHAR(50) DEFAULT 'admin' CHECK (role IN ('superadmin', 'admin', 'compliance_officer')),
+    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    email_verified BOOLEAN DEFAULT FALSE,
+    mfa_enabled BOOLEAN DEFAULT FALSE,
+    mfa_secret VARCHAR(255),
+    last_login_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_admins_email ON admins(email);
+CREATE INDEX idx_admins_status ON admins(status);
+CREATE INDEX idx_admins_created_at ON admins(created_at);
 
 CREATE TABLE kyc_records (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -30,7 +57,7 @@ CREATE TABLE kyc_records (
     documents_json JSONB NOT NULL,
     verification_result_json JSONB,
     rejection_reason TEXT,
-    reviewed_by UUID REFERENCES users(id),
+    reviewed_by UUID REFERENCES admins(id),
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     verified_at TIMESTAMP,
     expires_at TIMESTAMP,
