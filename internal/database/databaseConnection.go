@@ -22,6 +22,11 @@ func NewGormConnection() *gorm.DB {
 	password := config.Db().Password
 	dbname := config.Db().Name
 
+	log.Printf(
+		"DB CONFIG → host=%q user=%q dbname=%q",
+		host, user, dbname,
+	)
+
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=5432 sslmode=disable TimeZone=Africa/Lagos",
 		host, user, password, dbname,

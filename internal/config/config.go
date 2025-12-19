@@ -6,7 +6,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var _ = godotenv.Load(".env")
+var _ = godotenv.Load("../../.env")
 
 type dbConfig struct {
 	Host     string

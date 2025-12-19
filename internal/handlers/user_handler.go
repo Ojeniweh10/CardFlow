@@ -88,7 +88,7 @@ func (h *UserHandler) VerifyEmail(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) VerifyOtp(c *fiber.Ctx) error {
-    var otp string
+    var otp models.Otp
     if err := c.BodyParser(&otp); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "invalid request body",
@@ -96,13 +96,13 @@ func (h *UserHandler) VerifyOtp(c *fiber.Ctx) error {
     }
     user_id:= c.Locals("user_id").(uuid.UUID)
 
-    if otp == ""{
+    if otp.Otp == ""{
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "incomplete data",
         })
     }
 
-    err := h.service.VerifyOtp(user_id, otp)
+    err := h.service.VerifyOtp(user_id, otp.Otp)
     if err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": err.Error(),
