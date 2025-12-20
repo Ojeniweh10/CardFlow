@@ -14,7 +14,16 @@ type LoginReq struct {
 	Password string `json:"password"`
 }
 
+type MFALoginReq struct  {
+	Email    string `json:"email"`
+	TOTPCode string `json:"totp_code"`
+}
+
 
 type Otp struct{
 	Otp string `json:"otp"`
+}
+
+type VerifyMFA struct{
+	TotpCode string `json:"totp_code"`
 }

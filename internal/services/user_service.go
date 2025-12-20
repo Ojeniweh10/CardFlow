@@ -13,8 +13,11 @@ import (
 type UserService interface {
     RegisterUser(models.CreateUserRequest) error
 	Login(models.LoginReq) (string, error)
+	MFALogin(models.MFALoginReq)(string , error)
 	VerifyEmail(userID uuid.UUID) error
 	VerifyOtp(userID uuid.UUID, otp string) error
+	EnableMFA(userID uuid.UUID)(string, error)
+	VerifyMFA(userID uuid.UUID, data string) error
 }
 
 type userService struct {
@@ -60,6 +63,9 @@ func (s *userService)Login(req models.LoginReq) (string, error){
 	if user == nil {
 		return "", errors.New("invalid email or password")
 	}
+	if user.MFAEnabled {
+		return "", errors.New("MFA required")
+	}
 
 	err = utils.CompareHashAndPassword(user.PasswordHash, req.Password)
 	if err != nil {
@@ -72,6 +78,33 @@ func (s *userService)Login(req models.LoginReq) (string, error){
 	}
 	return token, nil
 }
+
+func (s *userService) MFALogin(req models.MFALoginReq) (string, error) {
+    user, err := s.repo.FindByEmail(req.Email)
+    if err != nil {
+        return "", errors.New("something went wrong, please try again later")
+    }
+    if user == nil {
+        return "", errors.New("invalid email or password")
+    }
+
+    if !user.MFAEnabled {
+        return "", errors.New("MFA is not enabled for this user")
+    }
+
+    err = utils.ValidateTotp(req.TOTPCode, user.MFASecret)
+    if err != nil {
+        return "", err
+    }
+
+    token, err := utils.GenerateJWT(user.ID, user.Email)
+    if err != nil {
+        return "", errors.New("something went wrong, please try again later")
+    }
+
+    return token, nil
+}
+
 
 func (s *userService) VerifyEmail(userID uuid.UUID) error {
 	user,  err := s.repo.FindByID(userID.String())
@@ -127,5 +160,47 @@ func (s *userService) VerifyOtp(userID uuid.UUID, otp string) error {
 		return errors.New("something went wrong, please try again later")
 	}
 
+	return nil
+}
+
+func (s *userService) EnableMFA(userID uuid.UUID) (string, error){
+	user,  err := s.repo.FindByID(userID.String())
+	if err != nil {
+		return"",  errors.New("something went wrong, please try again later")
+	}
+	if user == nil {
+		return "" ,  errors.New("user not found")
+	}
+	secret , otpURL , err := utils.GenerateMFASecret(userID)
+	if err != nil {
+		return "",  errors.New("something went wrong, please try again later")
+	}
+	user.MFASecret = secret
+	err = s.repo.Update(user)
+	if err != nil {
+		return "", errors.New("something went wrong, please try again later")
+	}
+
+	return otpURL, nil
+}
+
+func (s *userService) VerifyMFA(userID uuid.UUID, data string) error{
+	user,  err := s.repo.FindByID(userID.String())
+	if err != nil {
+		return errors.New("something went wrong, please try again later")
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+	secret := user.MFASecret
+	err = utils.ValidateTotp(data, secret)
+	if err != nil {
+		return err
+	}	
+	user.MFAEnabled = true
+	err = s.repo.Update(user)
+	if err != nil {
+		return errors.New("something went wrong, please try again later")
+	}
 	return nil
 }

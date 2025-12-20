@@ -5,11 +5,15 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"log"
 	"net/smtp"
+	"regexp"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/pquerna/otp"
+	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -74,4 +78,66 @@ func GenerateOTP() (string, error) {
 		otp[i] = digits[otp[i]%byte(len(digits))]
 	}
 	return string(otp), nil
+}
+
+func ValidatePassword(password string) error {
+	if len(password) < 8 {
+		return errors.New("password must be at least 8 characters long")
+	}
+	specialCharPattern := `[^\w\s]`
+	uppercasePattern := `[A-Z]`
+	lowercasePattern := `[a-z]`
+	numberPattern := `[0-9]`
+	if !regexp.MustCompile(specialCharPattern).MatchString(password) {
+		return errors.New("password must contain at least one special character")
+	}
+	if !regexp.MustCompile(uppercasePattern).MatchString(password) {
+		return errors.New("password must contain at least one uppercase letter")
+	}
+	if !regexp.MustCompile(lowercasePattern).MatchString(password) {
+		return errors.New("password must contain at least one lowercase letter")
+	}
+	if !regexp.MustCompile(numberPattern).MatchString(password) {
+		return errors.New("password must contain at least one number")
+	}
+	return nil
+}
+
+func GenerateMFASecret(userID uuid.UUID) (string, string, error) {
+    userid := userID.String() 
+	// Generate a new TOTP key
+    key, err := totp.Generate(totp.GenerateOpts{
+        Issuer:      "CardFlow",
+        AccountName: userid,
+    })
+    if err != nil {
+        return "", "", err
+    }
+
+    // The Base32 secret to store in DB
+    secret := key.Secret()
+
+    // The URL to generate a QR code (users scan this in their authenticator app)
+    otpURL := key.URL()
+
+    return secret, otpURL, nil
+}
+
+func ValidateTotp(data, secret string) error{
+	valid, err := totp.ValidateCustom(data, secret, time.Now().UTC(), totp.ValidateOpts{
+		Period:    30,
+		Skew:      1,
+		Digits:    otp.DigitsSix,
+		Algorithm: otp.AlgorithmSHA1,
+	})
+
+	if err != nil {
+        log.Printf("TOTP validation failed: %v", err) // log for devs
+        return errors.New("something went wrong, please try again later")
+    }
+
+	if !valid{
+		return errors.New("invalid authentication code")
+	}
+	return nil
 }
