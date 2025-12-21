@@ -1,5 +1,9 @@
 package models
 
+import (
+	"github.com/google/uuid"
+)
+
 
 type CreateUserRequest struct {
 	FirstName string `json:"first_name"`
@@ -26,4 +30,15 @@ type Otp struct{
 
 type VerifyMFA struct{
 	TotpCode string `json:"totp_code"`
+}
+
+type KycProfile struct{
+	Userid uuid.UUID
+	DOB string `json:"dob"`
+	ImageStr string `json:"image_string"`
+}
+
+type Bvn struct{
+	Userid uuid.UUID
+	Bvn string `json:"bvn"`
 }

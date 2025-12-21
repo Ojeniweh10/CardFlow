@@ -31,6 +31,17 @@ func UserRoutes(app *fiber.App, db *gorm.DB) {
     api.Post("/otp", middleware.JWTProtected(), userHandler.VerifyOtp)
     api.Post("/mfa/setup", middleware.JWTProtected(), userHandler.EnableMFA)
     api.Post("/mfa/verify", middleware.JWTProtected(), userHandler.VerifyMFA)
+    
+}
+
+func KycRoutes(app *fiber.App, db *gorm.DB){
+    kycRepo := repositories.NewKycRepository(db)
+    kycService := services.NewKycService(kycRepo)
+    kycHandler := handlers.NewKycHandler(kycService)
+    api := app.Group("/api/v1/kyc")
+    api.Post("/profile", middleware.JWTProtected(), kycHandler.Uploadimage)
+    api.Post("/bvn", middleware.JWTProtected(), kycHandler.VerifyBVN)
+    //api.Post("/nin", middleware.JWTProtected(), kycHandler.VerifyNIN)
 }
 
 // func CardRoutes(app *fiber.App, db *gorm.DB) {
