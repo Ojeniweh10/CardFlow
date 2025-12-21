@@ -46,28 +46,47 @@ CREATE INDEX idx_admins_email ON admins(email);
 CREATE INDEX idx_admins_status ON admins(status);
 CREATE INDEX idx_admins_created_at ON admins(created_at);
 
-CREATE TABLE kyc_records (
+CREATE TABLE kyc_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    submission_id VARCHAR(100) UNIQUE,
-    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'under_review', 'verified', 'rejected', 'expired')),
-    provider VARCHAR(50),
-    date_of_birth DATE NOT NULL,
-    address_json JSONB NOT NULL,
-    documents_json JSONB NOT NULL,
-    verification_result_json JSONB,
-    rejection_reason TEXT,
-    reviewed_by UUID REFERENCES admins(id),
-    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    verified_at TIMESTAMP,
-    expires_at TIMESTAMP,
+    date_of_birth TEXT NOT NULL,
+    image_url TEXT NOT NULL, -- selfie / face image stored in S3
+    status VARCHAR(50) DEFAULT 'in_progress'
+        CHECK (status IN (
+            'in_progress',
+            'completed',
+            'rejected'
+        )),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_kyc_user_id ON kyc_records(user_id);
-CREATE INDEX idx_kyc_status ON kyc_records(status);
-CREATE INDEX idx_kyc_expires_at ON kyc_records(expires_at);
+CREATE UNIQUE INDEX idx_kyc_profiles_user_id ON kyc_profiles(user_id);
+
+CREATE TABLE kyc_verifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    kyc_profile_id UUID NOT NULL REFERENCES kyc_profiles(id) ON DELETE CASCADE,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('bvn', 'nin')),
+    identifier VARCHAR(100) NOT NULL, -- BVN or NIN value
+    status VARCHAR(50) DEFAULT 'pending'
+        CHECK (status IN (
+            'pending',
+            'verified',
+            'rejected'
+        )),
+    partner_request_id VARCHAR(255),
+    partner_reference VARCHAR(255),
+    partner_address_json JSONB,
+    verification_result_json JSONB,
+    rejection_reason TEXT,
+    verified_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX idx_kyc_verifications_unique ON kyc_verifications (kyc_profile_id, type);
+CREATE INDEX idx_kyc_verifications_status ON kyc_verifications (status);
+
 
 CREATE TABLE cards (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

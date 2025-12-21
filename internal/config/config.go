@@ -24,6 +24,24 @@ func Db() dbConfig {
 	}
 }
 
+type awsConfig struct {
+	Bucket_name   string
+	Bucket_region string
+	Access_key    string
+	Secret_key    string
+}
+
+func Aws() awsConfig {
+	return awsConfig{
+		Bucket_name:   os.Getenv("S3_BUCKET_NAME"),
+		Bucket_region: os.Getenv("S3_BUCKET_REGION"),
+		Access_key:    os.Getenv("AWS_ACCESS_KEY"),
+		Secret_key:    os.Getenv("AWS_SECRET_KEY"),
+	}
+}
+
+
+
 
 var GatewaySecret = os.Getenv("GATEWAY_SECRET")
 var JwtSecret = os.Getenv("JWT_SECRET")

@@ -16,6 +16,8 @@ func NewUserRepository(db *gorm.DB) UserRepository {
     return &userRepository{db: db}
 }
 
+
+
 type UserRepository interface {
     Create(user *models.User) error
     FindByEmail(email string) (*models.User, error)
@@ -23,6 +25,7 @@ type UserRepository interface {
     UpdateUserOTP(userID uuid.UUID, otp string) error
     Update(user *models.User) error
 }
+
 
 
 func (r *userRepository) Create(user *models.User) error {
