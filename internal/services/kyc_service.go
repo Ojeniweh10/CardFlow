@@ -9,43 +9,127 @@ import (
 
 type KycService interface {
     Uploadimage(models.KycProfile)error
-    VerifyBVN(models.Bvn) error
+    UploadKycDocument(models.KycDoc) error
+	UploadProofOfAddress(models.KycDoc) error
 }
 
 type kycService struct {
-    repo repositories.KycRepository
+    userRepo repositories.UserRepository
+    kycrepo repositories.KycRepository
 }
 
-func NewKycService(repo repositories.KycRepository) KycService {
-    return &kycService{repo:repo}
+func NewKycService(kycrepo repositories.KycRepository, userRepo repositories.UserRepository) KycService {
+    return &kycService{kycrepo:kycrepo, userRepo: userRepo}
 }
 
-func (s *kycService)Uploadimage(data models.KycProfile) error{
-    kycProfile, err := s.repo.FindByID(data.Userid)
-	if kycProfile != nil {
-		return errors.New("kyc profile already exists for this user")
-	}
-	if err != nil {
-		//log the error to notify devs then return a generic error message
-		return errors.New("something went wrong, please try again later")
-	}
-    userid := data.Userid.String()
-    imageUrl, err := utils.ProcessBase64File(data.ImageStr, "kyc image", userid)
-	if err != nil {
-		return err
-	}
-    userKyc := &models.KYCProfile{
-        UserID: data.Userid,
-        DateOfBirth: data.DOB,
-        ImageURL: imageUrl,
-        Status: "started",
-    }
+const (
+    DocTypeSelfie        = "selfie"
+    DocTypeIDDocument    = "id_document"
+    DocTypeProofOfAddr   = "proof_of_address"
+	DocsUploaded 		 = "documents_uploaded"
+	UnderReview 		 = "under_review"
+)
 
-    return s.repo.CreateKycProfile(userKyc)
+func (s *kycService) Uploadimage(data models.KycProfile) error {
+	return s.kycrepo.RunInTransaction(func(repo repositories.KycRepository) error {
 
+		existing, err := repo.FindByUserID(data.Userid)
+		if err != nil {
+			return errors.New("something went wrong, please try again later")
+		}
+		if existing != nil {
+			return errors.New("kyc submission already exists")
+		}
+
+		encrypted, mime, err := utils.EncryptBase64Document(data.ImageStr)
+		if err != nil {
+			return err
+		}
+
+		sub := &models.KYCSubmission{
+			UserID: data.Userid,
+			Status: "started",
+		}
+		if err := repo.CreateKycSubmission(sub); err != nil {
+			return err
+		}
+
+		doc := &models.KYCDocument{
+			KYCSubmissionID: sub.ID,
+			DocumentType:    DocTypeSelfie,
+			MimeType:        mime,
+			EncryptedData:   []byte(encrypted),
+		}
+
+		return repo.CreateKycDocsSubmission(doc)
+	})
 }
 
-func (s *kycService)VerifyBVN(data models.Bvn)error{
-    //take bvn, call partner, take results, run matches on system if it doesnt match don't save and return reason for rejeciton else save.
-    return  nil
+
+func (s *kycService) UploadKycDocument(data models.KycDoc) error {
+	return s.kycrepo.RunInTransaction(func(repo repositories.KycRepository) error {
+
+		sub, err := repo.FindByUserID(data.Userid)
+		if err != nil {
+			return errors.New("something went wrong, please try again later")
+		}
+		if sub == nil {
+			return errors.New("kyc submission does not exist, upload selfie first")
+		}
+
+		encrypted, mime, err := utils.EncryptBase64Document(data.DocStr)
+		if err != nil {
+			return err
+		}
+
+		sub.Status = DocsUploaded
+		if err := repo.UpdateKycSubmission(sub); err != nil {
+			return err
+		}
+
+		doc := &models.KYCDocument{
+			KYCSubmissionID: sub.ID,
+			DocumentType:    DocTypeIDDocument,
+			MimeType:        mime,
+			EncryptedData:   []byte(encrypted),
+		}
+
+		return repo.CreateKycDocsSubmission(doc)
+	})
 }
+
+
+func (s *kycService) UploadProofOfAddress(data models.KycDoc) error {
+	return s.kycrepo.RunInTransaction(func(repo repositories.KycRepository) error {
+
+		sub, err := repo.FindByUserID(data.Userid)
+		if err != nil {
+			return errors.New("something went wrong, please try again later")
+		}
+		if sub == nil {
+			return errors.New("kyc submission does not exist, upload selfie first")
+		}
+
+		encrypted, mime, err := utils.EncryptBase64Document(data.DocStr)
+		if err != nil {
+			return err
+		}
+
+		sub.Status = UnderReview
+		if err := repo.UpdateKycSubmission(sub); err != nil {
+			return err
+		}
+
+		doc := &models.KYCDocument{
+			KYCSubmissionID: sub.ID,
+			DocumentType:    DocTypeProofOfAddr,
+			MimeType:        mime,
+			EncryptedData:   []byte(encrypted),
+		}
+
+		return repo.CreateKycDocsSubmission(doc)
+	})
+}
+
+
+//make sure you fully understand the code before going ahead with other coding.

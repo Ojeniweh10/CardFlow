@@ -38,7 +38,7 @@ type KycProfile struct{
 	ImageStr string `json:"image_string"`
 }
 
-type Bvn struct{
+type KycDoc struct{
 	Userid uuid.UUID
-	Bvn string `json:"bvn"`
+	DocStr string `json:"doc_string"`
 }

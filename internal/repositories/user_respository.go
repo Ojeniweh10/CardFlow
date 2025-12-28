@@ -21,7 +21,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 type UserRepository interface {
     Create(user *models.User) error
     FindByEmail(email string) (*models.User, error)
-    FindByID(id string) (*models.User, error)
+    FindByID(id uuid.UUID) (*models.User, error)
     UpdateUserOTP(userID uuid.UUID, otp string) error
     Update(user *models.User) error
 }
@@ -46,7 +46,7 @@ func (r *userRepository) FindByEmail(email string) (*models.User, error) {
     return &user, nil
 }
 
-func (r *userRepository) FindByID(id string) (*models.User, error) {
+func (r *userRepository) FindByID(id uuid.UUID) (*models.User, error) {
     var user models.User
 
     err := r.db.Where("id = ?", id).First(&user).Error

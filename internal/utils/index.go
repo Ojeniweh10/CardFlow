@@ -3,20 +3,21 @@ package utils
 import (
 	"CardFlow/internal/config"
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"net/smtp"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/h2non/filetype"
@@ -25,6 +26,26 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var KYCEncryptionKey []byte
+
+func LoadEncryptionKey() error {
+	keyB64 := config.EncryptionKey
+	if keyB64 == "" {
+		return errors.New("KYC_ENCRYPTION_KEY_BASE64 not set")
+	}
+
+	key, err := base64.StdEncoding.DecodeString(keyB64)
+	if err != nil {
+		return errors.New("invalid base64 encryption key")
+	}
+
+	if len(key) != 32 {
+		return errors.New("encryption key must be 32 bytes (AES-256)")
+	}
+
+	KYCEncryptionKey = key
+	return nil
+}
 
 
 func Hash(password string) (string, error) {
@@ -150,53 +171,67 @@ func ValidateTotp(data, secret string) error{
 	return nil
 }
 
-// ProcessBase64File validates a base64 string, uploads it to S3, and returns the S3 URL
-func ProcessBase64File(base64File, folder, identifier string) (string, error) {
-	// Split the base64 string into metadata + actual file data
-	base64Parts := strings.SplitN(base64File, ",", 2)
-	if len(base64Parts) != 2 {
-		return "", errors.New("invalid base64 string format")
+
+func EncryptBase64Document(base64File string,) (encryptedBase64 string, mimeType string, err error) {
+	// Expected: data:<mime>;base64,<data>
+	parts := strings.SplitN(base64File, ",", 2)
+	if len(parts) != 2 {
+		return "", "", errors.New("invalid base64 format")
 	}
 
-	// Extract MIME type to determine file extension
-	mimeType := base64Parts[0][5:strings.Index(base64Parts[0], ";")]
-	fileExtension, err := getFileExtensionFromMIME(mimeType)
+	// Extract MIME type
+	meta := parts[0]
+	start := strings.Index(meta, ":")
+	end := strings.Index(meta, ";")
+	if start == -1 || end == -1 {
+		return "", "", errors.New("invalid base64 metadata")
+	}
+
+	mimeType = meta[start+1 : end]
+
+	// Validate MIME
+	if _, err := getFileExtensionFromMIME(mimeType); err != nil {
+		return "", "", err
+	}
+
+	// Decode base64 payload
+	plainBytes, err := base64.StdEncoding.DecodeString(parts[1])
 	if err != nil {
-		return "", err
+		return "", "", errors.New("invalid base64 payload")
 	}
 
-	// Optional: validate allowed file types
-	if !ValidateFileType(base64Parts[1]) {
-		return "", errors.New("only JPEG, PNG, JPG, and PDF files are allowed")
-	}
-
-	// Build filename for S3
-	filename := folder + "/" + identifier + "." + fileExtension
-
-	// Upload to S3
-	err = UploadBase64ToS3Bucket(base64Parts[1], filename)
+	// AES-256-GCM
+	block, err := aes.NewCipher(KYCEncryptionKey)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	// Construct and return the S3 URL
-	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s",
-		config.Aws().Bucket_name,
-		config.Aws().Bucket_region,
-		filename,
-	)
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", "", err
+	}
 
-	return s3URL, nil
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", "", err
+	}
+
+	ciphertext := gcm.Seal(nil, nonce, plainBytes, nil)
+
+	// nonce || ciphertext
+	final := append(nonce, ciphertext...)
+
+	encryptedBase64 = base64.StdEncoding.EncodeToString(final)
+
+	return encryptedBase64, mimeType, nil
 }
 
 func getFileExtensionFromMIME(mimeType string) (string, error) {
 	switch mimeType {
-	case "image/jpeg":
+	case "image/jpeg", "image/jpg":
 		return "jpg", nil
 	case "image/png":
 		return "png", nil
-	case "image/jpg":
-		return "jpg", nil
 	case "application/pdf":
 		return "pdf", nil
 	default:
@@ -204,40 +239,33 @@ func getFileExtensionFromMIME(mimeType string) (string, error) {
 	}
 }
 
-var UploadBase64ToS3Bucket = func(Base64String, filename string) error {
-    awsRegion := config.Aws().Bucket_region
-    awsAccessKey := config.Aws().Access_key
-    awsSecretKey := config.Aws().Secret_key
-    bucketName := config.Aws().Bucket_name
+func DecryptBase64Document(encryptedBase64 string) (plainBase64 string, err error) {
+	data, err := base64.StdEncoding.DecodeString(encryptedBase64)
+	if err != nil {
+		return "", errors.New("invalid encrypted base64")
+	}
+	block, err := aes.NewCipher(KYCEncryptionKey)
+	if err != nil {
+		return "", err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	if len(data) < gcm.NonceSize() {
+		return "", errors.New("ciphertext too short")
+	}
+	nonce := data[:gcm.NonceSize()]
+	ciphertext := data[gcm.NonceSize():]
 
-    sess, err := session.NewSession(&aws.Config{
-        Region:      aws.String(awsRegion),
-        Credentials: credentials.NewStaticCredentials(awsAccessKey, awsSecretKey, ""),
-    })
-    if err != nil {
-        return err
-    }
-
-    imageData, err := base64.StdEncoding.DecodeString(Base64String)
-    if err != nil {
-        return err
-    }
-
-    if isProbablyEncrypted(imageData) {
-        return errors.New("document is encrypted")
-    }
-
-    uploader := s3manager.NewUploader(sess)
-    _, err = uploader.Upload(&s3manager.UploadInput{
-        Bucket: aws.String(bucketName),
-        Key:    aws.String(filename),
-        Body:   bytes.NewReader(imageData),
-    })
-    if err != nil {
-        return err
-    }
-    return nil
+	plainBytes, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", errors.New("decryption failed")
+	}
+	plainBase64 = base64.StdEncoding.EncodeToString(plainBytes)
+	return plainBase64, nil
 }
+
 
 
 
@@ -304,4 +332,85 @@ var ValidateFileType =func(base64Str string) bool {
 		"application/pdf": true,
 	}
 	return allowedTypes[kind.MIME.Value]
+}
+
+func ConvertS3URLToBase64(s3URL string) (string, error) {
+	// 1. Basic sanity check
+	if s3URL == "" {
+		return "", errors.New("empty image url")
+	}
+
+	// 2. Parse and validate URL
+	parsedURL, err := url.Parse(s3URL)
+	if err != nil {
+		return "", errors.New("invalid image url")
+	}
+
+	// 3. Prevent SSRF – ensure URL belongs to your S3 bucket
+	expectedHost := fmt.Sprintf(
+		"%s.s3.%s.amazonaws.com",
+		config.Aws().Bucket_name,
+		config.Aws().Bucket_region,
+	)
+
+	if parsedURL.Host != expectedHost {
+		return "", errors.New("unauthorized image source")
+	}
+
+	// 4. Fetch file from S3
+	resp, err := http.Get(s3URL)
+	if err != nil {
+		return "", errors.New("failed to fetch image")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New("image not accessible")
+	}
+
+	// 5. Read file into memory
+	fileBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.New("failed to read image data")
+	}
+
+	// 6. Enforce file size limit (e.g. 5MB)
+	const maxFileSize = 5 * 1024 * 1024
+	if len(fileBytes) > maxFileSize {
+		return "", errors.New("image too large")
+	}
+
+	// 7. Detect MIME type from file content
+	kind, err := filetype.Match(fileBytes)
+	if err != nil || kind == filetype.Unknown {
+		return "", errors.New("unsupported file type")
+	}
+
+	allowedTypes := map[string]bool{
+		"image/jpeg":      true,
+		"image/png":       true,
+		"image/jpg":       true,
+		"application/pdf": true,
+	}
+
+	if !allowedTypes[kind.MIME.Value] {
+		return "", errors.New("unsupported mime type")
+	}
+
+	// 8. Detect encrypted documents (reuse your logic)
+	if isProbablyEncrypted(fileBytes) {
+		return "", errors.New("document is encrypted")
+	}
+
+	// 9. Convert bytes → Base64
+	base64Str := base64.StdEncoding.EncodeToString(fileBytes)
+
+	// 10. Build Data URI
+	dataURI := fmt.Sprintf(
+		"data:%s;base64,%s",
+		kind.MIME.Value,
+		base64Str,
+	)
+
+	return dataURI, nil
 }
