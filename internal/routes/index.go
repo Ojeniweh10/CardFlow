@@ -35,13 +35,14 @@ func UserRoutes(app *fiber.App, db *gorm.DB) {
 }
 
 func KycRoutes(app *fiber.App, db *gorm.DB){
+    userRepo := repositories.NewUserRepository(db)
     kycRepo := repositories.NewKycRepository(db)
-    kycService := services.NewKycService(kycRepo)
+    kycService := services.NewKycService(kycRepo, userRepo)
     kycHandler := handlers.NewKycHandler(kycService)
     api := app.Group("/api/v1/kyc")
-    api.Post("/profile", middleware.JWTProtected(), kycHandler.Uploadimage)
-    api.Post("/bvn", middleware.JWTProtected(), kycHandler.VerifyBVN)
-    //api.Post("/nin", middleware.JWTProtected(), kycHandler.VerifyNIN)
+    api.Post("/selfie", middleware.JWTProtected(), kycHandler.Uploadimage)
+    api.Post("/document", middleware.JWTProtected(), kycHandler.UploadKycDocument)//a picture of an id, nin or voters card or passport
+    api.Post("/proof-of-address", middleware.JWTProtected(), kycHandler.UploadProofOfAddress)
 }
 
 // func CardRoutes(app *fiber.App, db *gorm.DB) {

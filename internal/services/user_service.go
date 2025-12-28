@@ -107,7 +107,7 @@ func (s *userService) MFALogin(req models.MFALoginReq) (string, error) {
 
 
 func (s *userService) VerifyEmail(userID uuid.UUID) error {
-	user,  err := s.repo.FindByID(userID.String())
+	user,  err := s.repo.FindByID(userID)
 	if err != nil {
 		return errors.New("something went wrong, please try again later")
 	}
@@ -134,7 +134,7 @@ func (s *userService) VerifyEmail(userID uuid.UUID) error {
 }
 
 func (s *userService) VerifyOtp(userID uuid.UUID, otp string) error {
-	user,  err := s.repo.FindByID(userID.String())
+	user,  err := s.repo.FindByID(userID)
 	if err != nil {
 		return errors.New("something went wrong, please try again later")
 	}
@@ -164,7 +164,7 @@ func (s *userService) VerifyOtp(userID uuid.UUID, otp string) error {
 }
 
 func (s *userService) EnableMFA(userID uuid.UUID) (string, error){
-	user,  err := s.repo.FindByID(userID.String())
+	user,  err := s.repo.FindByID(userID)
 	if err != nil {
 		return"",  errors.New("something went wrong, please try again later")
 	}
@@ -185,7 +185,7 @@ func (s *userService) EnableMFA(userID uuid.UUID) (string, error){
 }
 
 func (s *userService) VerifyMFA(userID uuid.UUID, data string) error{
-	user,  err := s.repo.FindByID(userID.String())
+	user,  err := s.repo.FindByID(userID)
 	if err != nil {
 		return errors.New("something went wrong, please try again later")
 	}

@@ -40,24 +40,24 @@ func (h *KycHandler) Uploadimage(c *fiber.Ctx) error{
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
         "success": true,
-        "message": "image processed successfully",
+        "message": "image uploaded successfully",
     })
 }
 
-func (h *KycHandler)VerifyBVN(c *fiber.Ctx) error{
-    var data models.Bvn
+func (h *KycHandler)UploadKycDocument(c *fiber.Ctx) error{
+    var data models.KycDoc
 	if err := c.BodyParser(&data); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "invalid request body",
         })
     }
 	data.Userid = c.Locals("user_id").(uuid.UUID)
-    if data.Bvn == "" {
+    if data.DocStr == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "incomplete data",
         })
 	}
-    err := h.service.VerifyBVN(data)
+    err := h.service.UploadKycDocument(data)
 	if err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": err.Error(),
@@ -66,6 +66,32 @@ func (h *KycHandler)VerifyBVN(c *fiber.Ctx) error{
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
         "success": true,
-        "message": "bvn verified successfully",
+        "message": "Document uploaded successfully",
+    })
+}
+
+func (h *KycHandler)UploadProofOfAddress(c *fiber.Ctx) error{
+    var data models.KycDoc
+	if err := c.BodyParser(&data); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "invalid request body",
+        })
+    }
+	data.Userid = c.Locals("user_id").(uuid.UUID)
+    if data.DocStr == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "incomplete data",
+        })
+	}
+    err := h.service.UploadProofOfAddress(data)
+	if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+        "success": true,
+        "message": "Proof of Address uploaded successfully, Verification Pending",
     })
 }
