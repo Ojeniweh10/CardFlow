@@ -4,13 +4,14 @@ import (
 	"CardFlow/internal/models"
 	"CardFlow/internal/repositories"
 	"CardFlow/internal/utils"
+	"context"
 	"errors"
 )
 
 type KycService interface {
-    Uploadimage(models.KycProfile)error
-    UploadKycDocument(models.KycDoc) error
-	UploadProofOfAddress(models.KycDoc) error
+    Uploadimage(context.Context, models.KycProfile)error
+    UploadKycDocument(context.Context, models.KycDoc) error
+	UploadProofOfAddress(context.Context, models.KycDoc) error
 }
 
 type kycService struct {
@@ -30,8 +31,8 @@ const (
 	UnderReview 		 = "under_review"
 )
 
-func (s *kycService) Uploadimage(data models.KycProfile) error {
-	return s.kycrepo.RunInTransaction(func(repo repositories.KycRepository) error {
+func (s *kycService) Uploadimage(ctx context.Context,data models.KycProfile) error {
+	return s.kycrepo.RunInTransaction(ctx, func(repo repositories.KycRepository) error {
 
 		existing, err := repo.FindByUserID(data.Userid)
 		if err != nil {
@@ -66,8 +67,8 @@ func (s *kycService) Uploadimage(data models.KycProfile) error {
 }
 
 
-func (s *kycService) UploadKycDocument(data models.KycDoc) error {
-	return s.kycrepo.RunInTransaction(func(repo repositories.KycRepository) error {
+func (s *kycService) UploadKycDocument(ctx context.Context, data models.KycDoc) error {
+	return s.kycrepo.RunInTransaction(ctx, func(repo repositories.KycRepository) error {
 
 		sub, err := repo.FindByUserID(data.Userid)
 		if err != nil {
@@ -99,8 +100,8 @@ func (s *kycService) UploadKycDocument(data models.KycDoc) error {
 }
 
 
-func (s *kycService) UploadProofOfAddress(data models.KycDoc) error {
-	return s.kycrepo.RunInTransaction(func(repo repositories.KycRepository) error {
+func (s *kycService) UploadProofOfAddress(ctx context.Context, data models.KycDoc) error {
+	return s.kycrepo.RunInTransaction(ctx, func(repo repositories.KycRepository) error {
 
 		sub, err := repo.FindByUserID(data.Userid)
 		if err != nil {

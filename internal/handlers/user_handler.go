@@ -4,6 +4,8 @@ import (
 	"CardFlow/internal/models"
 	"CardFlow/internal/services"
 	"CardFlow/internal/utils"
+	"context"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -20,7 +22,8 @@ func NewUserHandler(service services.UserService) *UserHandler {
 
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
     var req models.CreateUserRequest
-
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
     if err := c.BodyParser(&req); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "invalid request body",
@@ -39,7 +42,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
         })
 	}
 
-    err := h.service.RegisterUser(req)
+    err := h.service.RegisterUser(ctx, req)
     if err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": err.Error(),
@@ -55,6 +58,8 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 
 func (h *UserHandler) Login(c *fiber.Ctx) error {
     var req models.LoginReq
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
     if err := c.BodyParser(&req); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "invalid request body",
@@ -67,7 +72,7 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
         })
     }
 
-    token, err := h.service.Login(req)
+    token, err := h.service.Login(ctx, req)
     if err != nil {
         if err.Error() == "MFA required" {
             return c.Status(200).JSON(fiber.Map{
@@ -87,6 +92,8 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 
 func (h *UserHandler) MFALogin(c *fiber.Ctx) error {
     var req models.MFALoginReq
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
     if err := c.BodyParser(&req); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "invalid request body",
@@ -99,7 +106,7 @@ func (h *UserHandler) MFALogin(c *fiber.Ctx) error {
         })
     }
 
-    token, err := h.service.MFALogin(req)
+    token, err := h.service.MFALogin(ctx, req)
     if err != nil {
         return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
             "error": err.Error(),
@@ -114,8 +121,10 @@ func (h *UserHandler) MFALogin(c *fiber.Ctx) error {
 
 
 func (h *UserHandler) VerifyEmail(c *fiber.Ctx) error {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
     user_id:= c.Locals("user_id").(uuid.UUID)
-    err := h.service.VerifyEmail(user_id)
+    err := h.service.VerifyEmail(ctx, user_id)
     if err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": err.Error(),
@@ -130,6 +139,8 @@ func (h *UserHandler) VerifyEmail(c *fiber.Ctx) error {
 
 func (h *UserHandler) VerifyOtp(c *fiber.Ctx) error {
     var otp models.Otp
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
     if err := c.BodyParser(&otp); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "invalid request body",
@@ -143,7 +154,7 @@ func (h *UserHandler) VerifyOtp(c *fiber.Ctx) error {
         })
     }
 
-    err := h.service.VerifyOtp(user_id, otp.Otp)
+    err := h.service.VerifyOtp(ctx, user_id, otp.Otp)
     if err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": err.Error(),
@@ -159,7 +170,9 @@ func (h *UserHandler) VerifyOtp(c *fiber.Ctx) error {
 
 func (h *UserHandler) EnableMFA(c *fiber.Ctx) error{
     user_id:= c.Locals("user_id").(uuid.UUID)
-    res, err := h.service.EnableMFA(user_id)
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+    res, err := h.service.EnableMFA(ctx, user_id)
     if err != nil{
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": err.Error(),
@@ -173,6 +186,8 @@ func (h *UserHandler) EnableMFA(c *fiber.Ctx) error{
 
 func (h *UserHandler) VerifyMFA(c *fiber.Ctx) error{
     var data models.VerifyMFA
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
     if err := c.BodyParser(&data); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "invalid request body",
@@ -184,7 +199,7 @@ func (h *UserHandler) VerifyMFA(c *fiber.Ctx) error{
         })
     }
     user_id:= c.Locals("user_id").(uuid.UUID)
-    err := h.service.VerifyMFA(user_id, data.TotpCode)
+    err := h.service.VerifyMFA(ctx, user_id, data.TotpCode)
     if err != nil{
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": err.Error(),

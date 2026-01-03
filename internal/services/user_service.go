@@ -4,6 +4,7 @@ import (
 	"CardFlow/internal/models"
 	"CardFlow/internal/repositories"
 	"CardFlow/internal/utils"
+	"context"
 	"errors"
 	"time"
 
@@ -11,13 +12,13 @@ import (
 )
 
 type UserService interface {
-    RegisterUser(models.CreateUserRequest) error
-	Login(models.LoginReq) (string, error)
-	MFALogin(models.MFALoginReq)(string , error)
-	VerifyEmail(userID uuid.UUID) error
-	VerifyOtp(userID uuid.UUID, otp string) error
-	EnableMFA(userID uuid.UUID)(string, error)
-	VerifyMFA(userID uuid.UUID, data string) error
+    RegisterUser(ctx context.Context, req models.CreateUserRequest) error
+	Login(ctx context.Context, req models.LoginReq) (string, error)
+	MFALogin(ctx context.Context, req models.MFALoginReq)(string , error)
+	VerifyEmail(ctx context.Context,userID uuid.UUID) error
+	VerifyOtp(ctx context.Context, userID uuid.UUID, otp string) error
+	EnableMFA(ctx context.Context, userID uuid.UUID)(string, error)
+	VerifyMFA(ctx context.Context, userID uuid.UUID, data string) error
 }
 
 type userService struct {
@@ -29,8 +30,8 @@ func NewUserService(repo repositories.UserRepository) UserService {
 }
 
 
-func (s *userService) RegisterUser(req models.CreateUserRequest) error {
-    existingUser, err := s.repo.FindByEmail(req.Email)
+func (s *userService) RegisterUser(ctx context.Context, req models.CreateUserRequest) error {
+    existingUser, err := s.repo.FindByEmail(ctx, req.Email)
 	if existingUser != nil {
 		return errors.New("user with this email already exists")
 	}
@@ -52,11 +53,11 @@ func (s *userService) RegisterUser(req models.CreateUserRequest) error {
 		Phone:        req.Phone,
     }
 
-    return s.repo.Create(user)
+    return s.repo.Create(ctx, user)
 }
 
-func (s *userService)Login(req models.LoginReq) (string, error){
-	user, err := s.repo.FindByEmail(req.Email)
+func (s *userService)Login(ctx context.Context, req models.LoginReq) (string, error){
+	user, err := s.repo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		return "", errors.New("something went wrong, please try again later")
 	}
@@ -79,8 +80,8 @@ func (s *userService)Login(req models.LoginReq) (string, error){
 	return token, nil
 }
 
-func (s *userService) MFALogin(req models.MFALoginReq) (string, error) {
-    user, err := s.repo.FindByEmail(req.Email)
+func (s *userService) MFALogin(ctx context.Context,req models.MFALoginReq) (string, error) {
+    user, err := s.repo.FindByEmail(ctx, req.Email)
     if err != nil {
         return "", errors.New("something went wrong, please try again later")
     }
@@ -106,8 +107,8 @@ func (s *userService) MFALogin(req models.MFALoginReq) (string, error) {
 }
 
 
-func (s *userService) VerifyEmail(userID uuid.UUID) error {
-	user,  err := s.repo.FindByID(userID)
+func (s *userService) VerifyEmail(ctx context.Context,userID uuid.UUID) error {
+	user,  err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		return errors.New("something went wrong, please try again later")
 	}
@@ -124,7 +125,7 @@ func (s *userService) VerifyEmail(userID uuid.UUID) error {
 		return errors.New("failed to send OTP email")
 	}
 
-	err = s.repo.UpdateUserOTP(userID, otp)
+	err = s.repo.UpdateUserOTP(ctx, userID, otp)
 	if err != nil {
 		return errors.New("something went wrong, please try again later")
 	}
@@ -133,8 +134,8 @@ func (s *userService) VerifyEmail(userID uuid.UUID) error {
 
 }
 
-func (s *userService) VerifyOtp(userID uuid.UUID, otp string) error {
-	user,  err := s.repo.FindByID(userID)
+func (s *userService) VerifyOtp(ctx context.Context, userID uuid.UUID, otp string) error {
+	user,  err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		return errors.New("something went wrong, please try again later")
 	}
@@ -155,7 +156,7 @@ func (s *userService) VerifyOtp(userID uuid.UUID, otp string) error {
 	user.OTP = ""
 	user.OTPExpiresAt = time.Time{}
 
-	err = s.repo.Update(user)
+	err = s.repo.Update(ctx, user)
 	if err != nil {
 		return errors.New("something went wrong, please try again later")
 	}
@@ -163,8 +164,8 @@ func (s *userService) VerifyOtp(userID uuid.UUID, otp string) error {
 	return nil
 }
 
-func (s *userService) EnableMFA(userID uuid.UUID) (string, error){
-	user,  err := s.repo.FindByID(userID)
+func (s *userService) EnableMFA(ctx context.Context, userID uuid.UUID) (string, error){
+	user,  err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		return"",  errors.New("something went wrong, please try again later")
 	}
@@ -176,7 +177,7 @@ func (s *userService) EnableMFA(userID uuid.UUID) (string, error){
 		return "",  errors.New("something went wrong, please try again later")
 	}
 	user.MFASecret = secret
-	err = s.repo.Update(user)
+	err = s.repo.Update(ctx,user)
 	if err != nil {
 		return "", errors.New("something went wrong, please try again later")
 	}
@@ -184,8 +185,8 @@ func (s *userService) EnableMFA(userID uuid.UUID) (string, error){
 	return otpURL, nil
 }
 
-func (s *userService) VerifyMFA(userID uuid.UUID, data string) error{
-	user,  err := s.repo.FindByID(userID)
+func (s *userService) VerifyMFA(ctx context.Context, userID uuid.UUID, data string) error{
+	user,  err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		return errors.New("something went wrong, please try again later")
 	}
@@ -198,7 +199,7 @@ func (s *userService) VerifyMFA(userID uuid.UUID, data string) error{
 		return err
 	}	
 	user.MFAEnabled = true
-	err = s.repo.Update(user)
+	err = s.repo.Update(ctx, user)
 	if err != nil {
 		return errors.New("something went wrong, please try again later")
 	}

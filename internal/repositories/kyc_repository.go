@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"CardFlow/internal/models"
+	"context"
 	"errors"
 
 	"github.com/google/uuid"
@@ -25,13 +26,11 @@ type KycRepository interface{
 	CreateKycSubmission(KycUser *models.KYCSubmission) error
 	CreateKycDocsSubmission(KycDocs *models.KYCDocument) error
 	UpdateKycSubmission(kyc *models.KYCSubmission) error
-	RunInTransaction(fn func(repo KycRepository) error) error
+	RunInTransaction(ctx context.Context, fn func(repo KycRepository) error) error
 }
 
-func (r *kycRepository) RunInTransaction(
-	fn func(repo KycRepository) error,
-) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
+func (r *kycRepository) RunInTransaction(ctx context.Context, fn func(repo KycRepository) error) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		txRepo := &kycRepository{db: tx}
 		return fn(txRepo)
 	})

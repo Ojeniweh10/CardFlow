@@ -3,6 +3,8 @@ package handlers
 import (
 	"CardFlow/internal/models"
 	"CardFlow/internal/services"
+	"context"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -18,6 +20,8 @@ func NewKycHandler(service services.KycService) *KycHandler {
 
 func (h *KycHandler) Uploadimage(c *fiber.Ctx) error{
 	var data models.KycProfile
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	if err := c.BodyParser(&data); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "invalid request body",
@@ -31,7 +35,7 @@ func (h *KycHandler) Uploadimage(c *fiber.Ctx) error{
         })
 	}
 
-	err := h.service.Uploadimage(data)
+	err := h.service.Uploadimage(ctx, data)
 	if err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": err.Error(),
@@ -46,6 +50,8 @@ func (h *KycHandler) Uploadimage(c *fiber.Ctx) error{
 
 func (h *KycHandler)UploadKycDocument(c *fiber.Ctx) error{
     var data models.KycDoc
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	if err := c.BodyParser(&data); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "invalid request body",
@@ -57,7 +63,7 @@ func (h *KycHandler)UploadKycDocument(c *fiber.Ctx) error{
             "error": "incomplete data",
         })
 	}
-    err := h.service.UploadKycDocument(data)
+    err := h.service.UploadKycDocument(ctx, data)
 	if err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": err.Error(),
@@ -72,6 +78,8 @@ func (h *KycHandler)UploadKycDocument(c *fiber.Ctx) error{
 
 func (h *KycHandler)UploadProofOfAddress(c *fiber.Ctx) error{
     var data models.KycDoc
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	if err := c.BodyParser(&data); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "invalid request body",
@@ -83,7 +91,7 @@ func (h *KycHandler)UploadProofOfAddress(c *fiber.Ctx) error{
             "error": "incomplete data",
         })
 	}
-    err := h.service.UploadProofOfAddress(data)
+    err := h.service.UploadProofOfAddress(ctx, data)
 	if err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": err.Error(),
