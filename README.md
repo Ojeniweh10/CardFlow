@@ -8,7 +8,7 @@
 
 > **Enterprise-grade backend system for virtual card issuance, management, and transaction processing.**
 
-CardFlow is a fintech platform that enables businesses and individuals to issue and manage virtual payment cards through a simple, secure API. The platform integrates with card-issuing merchant partners while providing enhanced features including KYC/KYB verification, transaction monitoring, and comprehensive card lifecycle management.
+CardFlow is a fintech platform that enables businesses and individuals to issue and manage virtual payment cards through a simple, secure API. The platform provides enhanced features including KYC verification, transaction monitoring, and comprehensive card lifecycle management.
 
 ---
 
@@ -41,7 +41,7 @@ CardFlow is a fintech platform that enables businesses and individuals to issue 
 
 - 🔐 **Secure Authentication** - JWT-based auth with refresh tokens and optional MFA
 - 👤 **User Management** - Comprehensive user registration and profile management
-- ✅ **KYC/KYB Verification** - Automated identity verification with third-party provider integration
+- ✅ **KYC Verification** - identity verification Hnadled via admin panel by admins
 - 💳 **Virtual Card Issuance** - Single-use and multi-use card generation
 - 📊 **Transaction Management** - Real-time transaction processing and monitoring
 - 🔔 **Notifications** - Multi-channel notifications (Email, SMS, Push)
@@ -93,13 +93,6 @@ CardFlow follows a **clean, layered architecture** pattern:
 ├──────────────────────────────────────────────────────────┤
 │    Database Layer (PostgreSQL + Redis)                   │
 └──────────────────────────────────────────────────────────┘
-         │                              │
-         │                              │
-    ┌────▼──────┐              ┌────────▼─────────┐
-    │  Merchant │              │   KYC Provider   │
-    │ Partner   │              │   (korapay) │
-    │    API    │              └──────────────────┘
-    └───────────┘
 ```
 
 ### Design Patterns
@@ -230,17 +223,8 @@ Before you begin, ensure you have the following installed:
    JWT_ACCESS_EXPIRY=900           # 15 minutes in seconds
    JWT_REFRESH_EXPIRY=604800       # 7 days in seconds
 
-   # Merchant Partner API
-   MERCHANT_API_URL=https://sandbox.merchant.com
-   MERCHANT_API_KEY=your_merchant_api_key
-   MERCHANT_API_SECRET=your_merchant_api_secret
-   MERCHANT_WEBHOOK_SECRET=your_webhook_secret
 
-   # KYC Provider (korapay example)
-   KYC_PROVIDER=onfido
-   KYC_API_URL=https://api.korapay.com/v3
-   KYC_API_TOKEN=your_korapay_api_token
-   KYC_WEBHOOK_TOKEN=your_korapat_webhook_token
+
 
    # Email Service (SendGrid example)
    EMAIL_PROVIDER=sendgrid
@@ -451,11 +435,6 @@ cardflow-backend/
 │   │   ├── rate_limiter.go
 │   │   ├── logger_middleware.go
 │   │   └── cors_middleware.go
-│   ├── integrations/               # External API clients
-│   │   ├── merchant_client.go
-│   │   ├── kyc_client.go
-│   │   ├── email_client.go
-│   │   └── sms_client.go
 │   └── utils/                      # Utility functions
 │       ├── crypto.go
 │       ├── validator.go

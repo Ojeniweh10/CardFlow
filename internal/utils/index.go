@@ -171,6 +171,14 @@ func ValidateTotp(data, secret string) error{
 	return nil
 }
 
+func GenerateTotp(secret string) (string, error){
+	code, err := totp.GenerateCode(secret, time.Now().UTC())
+	if err != nil {
+		return "", err
+	}
+	return code, nil
+}	
+
 
 func EncryptBase64Document(base64File string,) (encryptedBase64 string, mimeType string, err error) {
 	// Expected: data:<mime>;base64,<data>

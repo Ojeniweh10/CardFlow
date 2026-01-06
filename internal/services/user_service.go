@@ -6,6 +6,7 @@ import (
 	"CardFlow/internal/utils"
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,6 +38,7 @@ func (s *userService) RegisterUser(ctx context.Context, req models.CreateUserReq
 	}
 	if err != nil {
 		//log the error to notify devs then return a generic error message
+		log.Println(err)
 		return errors.New("something went wrong, please try again later")
 	}
     hashedPassword, err := utils.Hash(req.Password)
