@@ -422,3 +422,123 @@ func ConvertS3URLToBase64(s3URL string) (string, error) {
 
 	return dataURI, nil
 }
+
+
+func GenerateNumberString(length int) string {
+	const digits = "0123456789"
+	number := make([]byte, length)
+	_, err := rand.Read(number)
+	if err != nil {
+		return ""
+	}
+	for i := 0; i < length; i++ {
+		number[i] = digits[number[i]%byte(len(digits))]
+	}
+	return string(number)
+}
+
+func HashString(data string) (string, error) {
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(data), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedBytes), nil
+}
+
+func ComputeLuhnCheckDigit(number string) string {
+	sum := 0
+	double := false
+	// Process digits from right to left
+	for i := len(number) - 1; i >= 0; i-- {
+		digit := int(number[i] - '0')
+		if double {
+			digit *= 2
+			if digit > 9 {
+				digit -= 9
+			}
+		}
+		sum += digit
+		double = !double
+	}
+	checkDigit := (10 - (sum % 10)) % 10
+	return fmt.Sprintf("%d", checkDigit)
+}
+
+func GenerateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, length)
+	_, err := rand.Read(b)
+	if err != nil {
+		return ""
+	}
+	for i := 0; i < length; i++ {
+		b[i] = charset[b[i]%byte(len(charset))]
+	}
+	return string(b)
+}
+
+func CalculateCardExpiry(month *string, year *string) time.Time {
+	expiry := time.Now().AddDate(3, 0, 0)
+	*month = fmt.Sprintf("%02d", expiry.Month())
+	*year = fmt.Sprintf("%d", expiry.Year())
+	return expiry
+}
+
+func GetExpiryDate(yearsToAdd int) (string, string, time.Time) {
+	expiry := time.Now().AddDate(yearsToAdd, 0, 0)
+	month := fmt.Sprintf("%02d", expiry.Month())
+	year := fmt.Sprintf("%d", expiry.Year())
+	return month, year, expiry
+}
+
+func EncryptString(plainText string, base64Key string) (string, error) {
+	key, err := base64.StdEncoding.DecodeString(base64Key)
+	if err != nil {
+		return "", errors.New("invalid base64 encryption key")
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", err
+	}
+	ciphertext := gcm.Seal(nil, nonce, []byte(plainText), nil)
+	final := append(nonce, ciphertext...)
+	encryptedBase64 := base64.StdEncoding.EncodeToString(final)
+	return encryptedBase64, nil
+}
+
+func DecryptString(encryptedBase64 string, base64Key string) (string, error) {
+	key, err := base64.StdEncoding.DecodeString(base64Key)
+	if err != nil {
+		return "", errors.New("invalid base64 encryption key")
+	}
+	data, err := base64.StdEncoding.DecodeString(encryptedBase64)
+	if err != nil {
+		return "", errors.New("invalid encrypted base64")
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	if len(data) < gcm.NonceSize() {
+		return "", errors.New("ciphertext too short")
+	}
+	nonce := data[:gcm.NonceSize()]
+	ciphertext := data[gcm.NonceSize():]
+	plainBytes, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", errors.New("decryption failed")
+	}
+	return string(plainBytes), nil
+}

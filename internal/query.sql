@@ -77,13 +77,15 @@ CREATE INDEX idx_kyc_status         ON kyc_submissions(status);
 
 CREATE TABLE kyc_documents (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    kyc_submission_id   UUID NOT NULL UNIQUE REFERENCES kyc_submissions(id) ON DELETE CASCADE,
-    document_type       VARCHAR(50) NOT NULL UNIQUE CHECK (document_type IN ('id_document', 'proof_of_address', 'selfie')),
+    kyc_submission_id   UUID NOT NULL  REFERENCES kyc_submissions(id) ON DELETE CASCADE,
+    document_type       VARCHAR(50) NOT NULL  CHECK (document_type IN ('id_document', 'proof_of_address', 'selfie')),
     mime_type           VARCHAR(100) NOT NULL,
     encrypted_data      BYTEA NOT NULL,
     encryption_version  VARCHAR(20) NOT NULL DEFAULT 'v1',
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE UNIQUE INDEX uniq_kyc_document_per_type ON kyc_documents (kyc_submission_id, document_type);
+
 
 -- ============================================================
 -- Cards
@@ -93,15 +95,16 @@ CREATE TABLE cards (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id                 UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     card_reference          VARCHAR(100) NOT NULL UNIQUE,
-    masked_pan              VARCHAR(19) NOT NULL,
+    pan_encrypted           VARCHAR(255) NOT NULL,
+    cvv_encrypted           VARCHAR(255) NOT NULL,
     last_four               VARCHAR(4) NOT NULL,
-    pan_hash                VARCHAR(255) NOT NULL,
-    cvv_hash                VARCHAR(255) NOT NULL,
+    masked_pan              VARCHAR(255) NOT NULL,
+    pan_hash                VARCHAR(255) UNIQUE NOT NULL,
+    cvv_hash                VARCHAR(255) UNIQUE NOT NULL,
     card_type               VARCHAR(50) CHECK (card_type IN ('single-use', 'multi-use')),
     currency                VARCHAR(3) NOT NULL DEFAULT 'USD',
     status                  VARCHAR(50) CHECK (status IN ('active', 'frozen', 'terminated', 'expired')),
     spending_limit_amount   DECIMAL(15,2),
-    spending_limit_period   VARCHAR(20),
     current_balance         DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     expiry_month            VARCHAR(2),
     expiry_year             VARCHAR(4),
@@ -113,6 +116,8 @@ CREATE TABLE cards (
 
 CREATE INDEX idx_cards_user_id      ON cards(user_id);
 CREATE INDEX idx_cards_status       ON cards(status);
+CREATE UNIQUE INDEX uniq_cards_pan ON cards(pan_hash);
+
 
 -- ============================================================
 -- Transactions

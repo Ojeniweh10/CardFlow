@@ -122,7 +122,9 @@ type Card struct {
 	User   User      `gorm:"foreignKey:UserID"`
 
 	CardReference string `gorm:"size:100;uniqueIndex;not null"`
-	MaskedPAN     string `gorm:"column:masked_pan;size:19;not null"`
+	PANencrypted  string `gorm:"column:pan_encrypted;size:255;not null"`
+	CVVencrypted  string `gorm:"column:cvv_encrypted;size:255;not null"`
+	MaskedPAN     string `gorm:"column:masked_pan;size:255;not null"`
 	LastFour      string `gorm:"column:last_four;size:4;not null"`
 	PANHash       string `gorm:"column:pan_hash;size:255;not null"`
 	CVVHash       string `gorm:"column:cvv_hash;size:255;not null"`
@@ -132,14 +134,13 @@ type Card struct {
 
 	Status string `gorm:"size:50"`
 
-	SpendingLimitAmount *float64 `gorm:"type:decimal(15,2)"`
-	SpendingLimitPeriod *string  `gorm:"size:20"`
+	SpendingLimitAmount float64 `gorm:"type:decimal(15,2)"`
 
 	CurrentBalance float64 `gorm:"type:decimal(15,2);not null;default:0.00"`
 
-	ExpiryMonth *string `gorm:"size:2"`
-	ExpiryYear  *string `gorm:"size:4"`
-	ExpiresAt   *time.Time
+	ExpiryMonth string `gorm:"size:2"`
+	ExpiryYear  string `gorm:"size:4"`
+	ExpiresAt   time.Time
 
 	IssuedAt  time.Time `gorm:"not null;default:current_timestamp"`
 	CreatedAt time.Time
