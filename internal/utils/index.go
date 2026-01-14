@@ -448,7 +448,7 @@ func HashString(data string) (string, error) {
 func ComputeLuhnCheckDigit(number string) string {
 	sum := 0
 	double := false
-	// Process digits from right to left
+	// Process digits from right to left 
 	for i := len(number) - 1; i >= 0; i-- {
 		digit := int(number[i] - '0')
 		if double {
