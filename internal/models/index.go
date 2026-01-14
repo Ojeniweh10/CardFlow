@@ -42,3 +42,24 @@ type KycDoc struct{
 	Userid uuid.UUID
 	DocStr string `json:"doc_string"`
 }
+
+
+type CreateCardReq struct{
+	Userid uuid.UUID
+	CardType string `json:"card_type"`
+	Currency string `json:"currency"`
+	SpendingLimit float64 `json:"spending_limit"`
+}
+
+type CreateCardResp struct{
+	CardType string `json:"card_type"`
+	MaskedPAN string `json:"masked_pan"`
+	Currency string `json:"currency"`
+	SpendingLimit float64 `json:"spending_limit"`
+	Balance float64 `json:"balance"`
+	Cvv string `json:"cvv"`
+	Status string `json:"status"`
+	ExpiryMonth string `json:"expiry_month"`
+	ExpiryYear string `json:"expiry_year"`
+
+}

@@ -12,7 +12,8 @@ import (
 
 func Routes(app *fiber.App, db *gorm.DB) {
     UserRoutes(app, db)
-    //CardRoutes(app, db)
+    KycRoutes(app, db)
+    CardRoutes(app, db)
     //TransactionRoutes(app, db)
 }
 
@@ -45,14 +46,16 @@ func KycRoutes(app *fiber.App, db *gorm.DB){
     api.Post("/proof-of-address", middleware.JWTProtected(), kycHandler.UploadProofOfAddress)
 }
 
-// func CardRoutes(app *fiber.App, db *gorm.DB) {
-//     cardRepo := repositories.NewCardRepository(db)
-//     cardHandler := handlers.NewCardHandler(cardRepo)
+func CardRoutes(app *fiber.App, db *gorm.DB) {
+    cardRepo := repositories.NewCardRepository(db)
+    kycRepo := repositories.NewKycRepository(db)
+    cardService := services.NewCardService(kycRepo, cardRepo)
+    cardHandler := handlers.NewCardHandler(cardService)
 
-//     api := app.Group("/api/v1/cards")
-//     api.Post("/", cardHandler.CreateCard)
-//     api.Get("/:id", cardHandler.GetCardById)
-// }
+    api := app.Group("/api/v1/cards")
+    api.Post("/",middleware.JWTProtected(), cardHandler.CreateCard)
+    //api.Get("/:id", cardHandler.GetCardById)
+}
 
 // func TransactionRoutes(app *fiber.App, db *gorm.DB) {
 //     transactionRepo := repositories.NewTransactionRepository(db)

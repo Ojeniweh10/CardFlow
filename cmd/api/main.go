@@ -56,7 +56,7 @@ func main() {
 	app.All("*", func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
-			"message": "Not Found",
+			"message": "Route Not Found",
 		})
 	})
 
