@@ -8,10 +8,14 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type CardService interface {
     CreateCard(context.Context, models.CreateCardReq)(any, error)
+	GetAllCards(context.Context, uuid.UUID)([]models.GetAllCardsResp, error)
+	GetCardById(context.Context, models.GetCardReq)(models.GetCardResp, error)
 }
 
 type cardService struct {
@@ -112,4 +116,60 @@ func (s *cardService) CreateCard(ctx context.Context, data models.CreateCardReq)
 func GenerateCardReference(prefix string) string {
 	uniqueID := utils.GenerateRandomString(10)
 	return prefix + uniqueID
+}
+
+func (s *cardService) GetAllCards(ctx context.Context, Userid uuid.UUID)([]models.GetAllCardsResp, error){
+	var res []models.GetAllCardsResp
+	cards, err := s.cardrepo.FindCardsByID(ctx, Userid)
+	if err != nil {
+		return nil,  errors.New("something went wrong, please try again later")
+	}
+	for _, card := range cards{
+		CvvDecrypt, err := utils.DecryptString(card.CVVencrypted, config.EncryptionKey)
+		if err != nil {
+			return nil, errors.New("Something Went Wrong, Please try again later")
+		}
+		resp := models.GetAllCardsResp{
+			Cardid: card.ID,
+			CardType: card.CardType,
+			MaskedPAN: card.MaskedPAN,
+			Lastfour: card.LastFour,
+			Cvv: CvvDecrypt,
+			Currency: card.Currency,
+			Status: card.Status,
+		}
+		res = append(res, resp)
+	}
+	
+	return res, nil
+}
+
+func (s *cardService) GetCardById(ctx context.Context, data models.GetCardReq)(models.GetCardResp, error){
+	card, err := s.cardrepo.FindCardByID(ctx, data)
+	if err != nil {
+		return models.GetCardResp{},  errors.New("something went wrong, please try again later")
+	}
+	Pan, err := utils.DecryptString(card.PANencrypted, config.EncryptionKey)
+	if err != nil {
+		return models.GetCardResp{}, errors.New("Something Went Wrong, Please try again later")
+	}
+	Cvv, err := utils.DecryptString(card.CVVencrypted, config.EncryptionKey)
+	if err != nil {
+		return models.GetCardResp{}, errors.New("Something Went Wrong, Please try again later")
+	}
+	res := models.GetCardResp{
+		Cardid: card.ID,
+		CardType: card.CardType,
+		PAN: Pan,
+		Cvv: Cvv,
+		Lastfour: card.LastFour,
+		Currency: card.Currency,
+		Status: card.Status,
+		SpendingLimit: card.SpendingLimitAmount,
+		CurrentBalance: card.CurrentBalance,
+		ExpiryMonth: card.ExpiryMonth,
+		ExpiryYear: card.ExpiryYear,
+	}
+	
+	return res, nil
 }

@@ -48,3 +48,41 @@ func (h *CardHandler) CreateCard(c *fiber.Ctx) error {
 		"data": res,
     })
 }
+
+func (h *CardHandler)FetchAllCards(c *fiber.Ctx) error{
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	Userid := c.Locals("user_id").(uuid.UUID)
+	res, err := h.service.GetAllCards(ctx, Userid)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+    
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{
+        "success": true,
+        "message": "cards fetched successfully",
+		"data": res,
+    })
+}
+
+func (h *CardHandler)FetchCardById(c *fiber.Ctx) error{
+    var req models.GetCardReq
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req.UserId = c.Locals("user_id").(uuid.UUID)
+    req.CardId = c.Params("id")
+	res, err := h.service.GetCardById(ctx, req)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+    
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{
+        "success": true,
+        "message": "card fetched successfully",
+		"data": res,
+    })
+}

@@ -63,3 +63,33 @@ type CreateCardResp struct{
 	ExpiryYear string `json:"expiry_year"`
 
 }
+
+type GetAllCardsResp struct {
+	Cardid uuid.UUID `json:"card_id"`
+	CardType string `json:"card_type"`
+	MaskedPAN string `json:"masked_pan"`
+	Lastfour string `json:"last_four"`
+	Cvv string `json:"cvv"`
+	Currency string `json:"currency"`
+	Status string `json:"status"`
+	
+}
+
+type GetCardReq struct{
+	UserId uuid.UUID
+	CardId string
+}
+
+type GetCardResp struct{
+	Cardid uuid.UUID `json:"card_id"`
+	CardType string `json:"card_type"`
+	PAN string `json:"card_number"`
+	Cvv string `json:"cvv"`
+	Lastfour string `json:"last_four"`
+	Currency string `json:"currency"`
+	Status string `json:"status"`
+	SpendingLimit float64 `json:"spending_limit"`
+	CurrentBalance float64 `json:"current_balance"`
+	ExpiryMonth string `json:"expiry_month"`
+	ExpiryYear string `json:"expiry_year"`
+}
