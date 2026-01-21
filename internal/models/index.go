@@ -93,3 +93,14 @@ type GetCardResp struct{
 	ExpiryMonth string `json:"expiry_month"`
 	ExpiryYear string `json:"expiry_year"`
 }
+
+type StatusReq struct{
+	Status string `json:"status"`
+}
+
+type CardEmailPayload struct{
+	Email string
+	FirstName string
+	LastFour string
+	Type string
+}

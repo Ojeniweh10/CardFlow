@@ -16,6 +16,7 @@ type CardService interface {
     CreateCard(context.Context, models.CreateCardReq)(any, error)
 	GetAllCards(context.Context, uuid.UUID)([]models.GetAllCardsResp, error)
 	GetCardById(context.Context, models.GetCardReq)(models.GetCardResp, error)
+	ModifyCardStatus(ctx context.Context, data models.GetCardReq, status string) error
 }
 
 type cardService struct {
@@ -172,4 +173,59 @@ func (s *cardService) GetCardById(ctx context.Context, data models.GetCardReq)(m
 	}
 	
 	return res, nil
+}
+
+func (s *cardService) ModifyCardStatus(ctx context.Context, data models.GetCardReq, status string) error{
+	switch status {
+	case "freeze":
+		card, err := s.cardrepo.FindCardByID(ctx, data)
+		if err != nil {
+			return errors.New("something went wrong, please try again later")
+		}
+		switch card.Status {
+		case "frozen":
+			return errors.New("card is already frozen")
+		case "expired":
+			return errors.New("card has expired")
+		}
+		card.Status = "frozen"
+		err = s.cardrepo.Update(ctx, card)
+		if err != nil {
+			return errors.New("something went wrong, please try again later")
+		}
+	case "unfreeze":
+		card, err := s.cardrepo.FindCardByID(ctx, data)
+		if err != nil {
+			return errors.New("something went wrong, please try again later")
+		}
+		switch card.Status {
+		case "active":
+			return errors.New("card is already active")
+		case "expired":
+			return errors.New("card has expired")
+		}
+		card.Status = "active"
+		err = s.cardrepo.Update(ctx, card)
+		if err != nil {
+			return errors.New("something went wrong, please try again later")
+		}
+	case "terminate":
+		card, err := s.cardrepo.FindCardByID(ctx, data)
+		if err != nil {
+			return errors.New("something went wrong, please try again later")
+		}
+		switch card.Status {
+		case "terminated":
+			return errors.New("card is already terminated")
+		case "expired":
+			return errors.New("card has expired")
+		}
+		card.Status = "terminated"
+		err = s.cardrepo.Update(ctx, card)
+		if err != nil {
+			return errors.New("something went wrong, please try again later")
+		}
+	}
+	
+	return nil
 }

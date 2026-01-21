@@ -117,6 +117,8 @@ CREATE TABLE cards (
 CREATE INDEX idx_cards_user_id      ON cards(user_id);
 CREATE INDEX idx_cards_status       ON cards(status);
 CREATE UNIQUE INDEX uniq_cards_pan ON cards(pan_hash);
+CREATE INDEX idx_cards_expires_at ON cards (expires_at);
+
 
 
 -- ============================================================

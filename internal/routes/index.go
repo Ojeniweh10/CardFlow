@@ -53,6 +53,7 @@ func CardRoutes(app *fiber.App, db *gorm.DB) {
     cardHandler := handlers.NewCardHandler(cardService)
 
     api := app.Group("/api/v1/cards")
+    api.Patch("/:status", middleware.JWTProtected(), cardHandler.ModifyCardStatus)
     api.Get("/:id",middleware.JWTProtected(), cardHandler.FetchCardById)
     api.Get("/", middleware.JWTProtected(), cardHandler.FetchAllCards)
     api.Post("/",middleware.JWTProtected(), cardHandler.CreateCard)
