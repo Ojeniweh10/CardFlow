@@ -10,6 +10,7 @@ require (
 	github.com/jackc/pgconn v1.14.3
 	github.com/joho/godotenv v1.5.1
 	github.com/pquerna/otp v1.5.0
+	github.com/robfig/cron/v3 v3.0.1
 	golang.org/x/crypto v0.31.0
 	gorm.io/datatypes v1.2.7
 	gorm.io/driver/postgres v1.6.0

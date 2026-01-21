@@ -25,6 +25,8 @@ type UserRepository interface {
     FindByID(ctx context.Context, id uuid.UUID) (*models.User, error)
     UpdateUserOTP(ctx context.Context, userID uuid.UUID, otp string) error
     Update(ctx context.Context, user *models.User) error
+    FindUsersByIDs(ctx context.Context, ids []uuid.UUID)([]models.User, error)
+
 }
     
 
@@ -69,4 +71,32 @@ func (r *userRepository) UpdateUserOTP(ctx context.Context, userID uuid.UUID, ot
 
 func (r *userRepository) Update(ctx context.Context, user *models.User) error {
     return r.db.WithContext(ctx).Save(user).Error
+}
+
+// func (r *userRepository)FindUsers(id uuid.UUID) ([]models.User, error){
+//     var user []models.User
+
+//     err := r.db.Where("id = ?", id).Find(&user).Error
+//     if err != nil {
+//         if errors.Is(err, gorm.ErrRecordNotFound) {
+//             return nil, nil
+//         }
+//         return nil, err
+//     }
+
+//     return user, nil
+// }
+
+
+func (r *userRepository) FindUsersByIDs(
+	ctx context.Context,
+	ids []uuid.UUID,
+) ([]models.User, error) {
+	var users []models.User
+
+	err := r.db.WithContext(ctx).
+		Where("id IN ?", ids).
+		Find(&users).Error
+
+	return users, err
 }
