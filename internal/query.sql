@@ -126,29 +126,38 @@ CREATE INDEX idx_cards_expires_at ON cards (expires_at);
 -- ============================================================
 
 CREATE TABLE transactions (
-    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    card_id                 UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
-    user_id                 UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    transaction_reference   VARCHAR(100) NOT NULL UNIQUE,
-    idempotency_key         VARCHAR(100),
-    amount                  DECIMAL(15,2) NOT NULL,
-    authorized_amount       DECIMAL(15,2),
-    captured_amount         DECIMAL(15,2),
-    currency                VARCHAR(3) NOT NULL,
-    merchant_name           VARCHAR(255),
-    merchant_mcc            VARCHAR(4),
-    merchant_country        VARCHAR(2),
-    status                  VARCHAR(50),
-    type                    VARCHAR(50),
-    decline_reason          TEXT,
-    metadata_json           JSONB,
-    transaction_timestamp   TIMESTAMP NOT NULL,
-    created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    card_id UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+    transaction_reference VARCHAR(100) NOT NULL UNIQUE,
+    idempotency_key VARCHAR(100),
+    amount DECIMAL(15,2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    authorized_amount DECIMAL(15,2),
+    captured_amount DECIMAL(15,2),
+    type VARCHAR(50) NOT NULL,
+    direction VARCHAR(10) CHECK (direction IN ('debit', 'credit')) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    merchant_name VARCHAR(255),
+    merchant_mcc VARCHAR(4),
+    merchant_country VARCHAR(2),
+    source VARCHAR(30), -- card_network, bank_transfer
+    decline_reason TEXT,
+    metadata_json JSONB,
+    transaction_timestamp TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_transactions_card_id   ON transactions(card_id);
-CREATE INDEX idx_transactions_user_id   ON transactions(user_id);
-CREATE INDEX idx_transactions_created   ON transactions(created_at);
+CREATE INDEX idx_transactions_user_id ON transactions(user_id);
+CREATE INDEX idx_transactions_card_id ON transactions(card_id);
+CREATE INDEX idx_transactions_type ON transactions(type);
+CREATE INDEX idx_transactions_status ON transactions(status);
+CREATE INDEX idx_transactions_timestamp ON transactions(transaction_timestamp);
+
+CREATE UNIQUE INDEX uniq_transactions_idempotency
+ON transactions(idempotency_key)
+WHERE idempotency_key IS NOT NULL;
+
 
 -- ============================================================
 -- Balance Ledger (Source of Truth)
@@ -160,6 +169,7 @@ CREATE TABLE balance_ledger (
     transaction_id  UUID REFERENCES transactions(id),
     entry_type      VARCHAR(50),
     amount          DECIMAL(15,2) NOT NULL,
+    feecharged       DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     balance_after   DECIMAL(15,2) NOT NULL,
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

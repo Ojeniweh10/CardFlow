@@ -104,3 +104,27 @@ type CardEmailPayload struct{
 	LastFour string
 	Type string
 }
+
+type TopUpCardReq struct{
+	Userid uuid.UUID
+	Cardid string `json:"card_id"`
+	Amount float64 `json:"amount"`
+}
+
+type TopUpCardResp struct{
+	AccountName string  `json:"account_name"`
+	AccountNumber string `json:"account_number"`
+	Bank string `json:"bank"`
+	Reference string `json:"reference"`
+	Note string `json:"note"`
+}
+
+
+type Webhook struct {
+	Transaction_reference  string    `json:"transaction_reference"`
+	Sender				   string    `json:"sender"`
+	Principal_amount       string    `json:"principal_amount"`
+	Settled_amount         string    `json:"settled_amount"`
+	Fee_charged            string    `json:"fee_charged"`
+	Transaction_date       string    `json:"transaction_date"`
+}

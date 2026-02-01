@@ -115,3 +115,51 @@ func (h *CardHandler)ModifyCardStatus(c *fiber.Ctx) error{
 		"data": nil,
     })
 }
+
+func (h *CardHandler)TopUpCard(c *fiber.Ctx) error{
+    var req models.TopUpCardReq
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+    req.Userid = c.Locals("user_id").(uuid.UUID)
+    req.Cardid = c.Params("id")
+    if req.Amount <= 0 {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "incomplete request data",
+		})
+    }
+    res, err := h.service.TopUpCard(ctx, req)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+    
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{
+        "success": true,
+        "message": "card funded successfully",
+		"data": res,
+    })
+}
+
+func (h *CardHandler)TopUpWebhook(c *fiber.Ctx) error{
+    var req models.Webhook
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+    if req.Transaction_reference == "" || req.Sender == "" || req.Principal_amount == "" || req.Settled_amount == "" || req.Fee_charged == "" || req.Transaction_date == ""{
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "incomplete request data",
+		})
+    }
+    res, err := h.service.WebhookTopUp(ctx, req)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+    
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{
+        "success": true,
+        "message": "data processed successfully",
+		"data": res,
+    })
+}
