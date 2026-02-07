@@ -5,8 +5,11 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -541,4 +544,26 @@ func DecryptString(encryptedBase64 string, base64Key string) (string, error) {
 		return "", errors.New("decryption failed")
 	}
 	return string(plainBytes), nil
+}
+
+
+func ValidateHMAC(rawBody []byte, receivedSignature string) error {
+	secret := []byte(config.WebhookSecret)
+	// 1. Create HMAC hasher
+	mac := hmac.New(sha256.New, secret)
+	// 2. Write raw request body
+	mac.Write(rawBody)
+	// 3. Compute expected signature
+	expectedMAC := mac.Sum(nil)
+	// 4. Decode received signature (hex)
+	receivedMAC, err := hex.DecodeString(receivedSignature)
+	if err != nil {
+		return errors.New("invalid signature encoding")
+	}
+	// 5. Constant-time comparison
+	if !hmac.Equal(expectedMAC, receivedMAC) {
+		return errors.New("hmac signature mismatch")
+	}
+
+	return nil
 }

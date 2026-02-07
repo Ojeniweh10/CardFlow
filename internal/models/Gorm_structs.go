@@ -137,6 +137,7 @@ type Card struct {
 	SpendingLimitAmount float64 `gorm:"type:decimal(15,2)"`
 
 	CurrentBalance float64 `gorm:"type:decimal(15,2);not null;default:0.00"`
+	HeldBalance float64 `gorm:"type:decimal(15,2);not null;default:0.00"`
 
 	ExpiryMonth string `gorm:"size:2"`
 	ExpiryYear  string `gorm:"size:4"`
@@ -167,8 +168,8 @@ type Transaction struct {
 	Amount   float64 `gorm:"type:decimal(15,2);not null"`
 	Currency string  `gorm:"size:3;not null"`
 
-	AuthorizedAmount *float64 `gorm:"type:decimal(15,2)"`
-	CapturedAmount   *float64 `gorm:"type:decimal(15,2)"`
+	AuthorizedAmount float64 `gorm:"type:decimal(15,2)"`
+	CapturedAmount   float64 `gorm:"type:decimal(15,2)"`
 
 	Type      string `gorm:"size:50;not null"` // authorization, capture, funding, refund
 	Direction string `gorm:"size:10;not null"` // debit | credit
@@ -200,8 +201,8 @@ type BalanceLedger struct {
 	CardID uuid.UUID `gorm:"type:uuid;not null;index"`
 	Card   Card      `gorm:"foreignKey:CardID"`
 
-	TransactionID *uuid.UUID   `gorm:"type:uuid"`
-	Transaction   *Transaction `gorm:"foreignKey:TransactionID"`
+	TransactionID uuid.UUID   `gorm:"type:uuid"`
+	Transaction   Transaction `gorm:"foreignKey:TransactionID"`
 
 	EntryType    string  `gorm:"size:50"`
 	Amount       float64 `gorm:"type:decimal(15,2);not null"`

@@ -106,6 +106,7 @@ CREATE TABLE cards (
     status                  VARCHAR(50) CHECK (status IN ('active', 'frozen', 'terminated', 'expired')),
     spending_limit_amount   DECIMAL(15,2),
     current_balance         DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    held_balance            DECIMAL(15,2) DEFAULT 0,
     expiry_month            VARCHAR(2),
     expiry_year             VARCHAR(4),
     expires_at              TIMESTAMP,
@@ -163,7 +164,7 @@ WHERE idempotency_key IS NOT NULL;
 -- Balance Ledger (Source of Truth)
 -- ============================================================
 
-CREATE TABLE balance_ledger (
+CREATE TABLE balance_ledgers (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     card_id         UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
     transaction_id  UUID REFERENCES transactions(id),
@@ -174,8 +175,8 @@ CREATE TABLE balance_ledger (
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_ledger_card_id      ON balance_ledger(card_id);
-CREATE INDEX idx_ledger_created_at   ON balance_ledger(created_at);
+CREATE INDEX idx_ledger_card_id      ON balance_ledgers(card_id);
+CREATE INDEX idx_ledger_created_at   ON balance_ledgers(created_at);
 
 -- ============================================================
 -- Audit Logs

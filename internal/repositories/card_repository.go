@@ -26,6 +26,7 @@ type CardRepository interface{
     Update(ctx context.Context, card models.Card) error
     FindCardsExpiringBetween(ctx context.Context, start, end time.Time) ([]models.Card, error)
     ExpireCardsBetween(ctx context.Context, start, end time.Time ) ([]models.Card, error)
+    FindCardsByReference(ctx context.Context, data models.WebhookReq) (models.Card, error)
 }
 
 
@@ -62,14 +63,11 @@ func (r *cardRepository) FindCardByID(ctx context.Context, data models.GetCardRe
 }
 
 func (r *cardRepository) Update(ctx context.Context, card models.Card) error {
-    return r.db.WithContext(ctx).Save(card).Error
+    return r.db.WithContext(ctx).Save(&card).Error
 }
 
 
-func (r *cardRepository) FindCardsExpiringBetween(
-	ctx context.Context,
-	start, end time.Time,
-) ([]models.Card, error) {
+func (r *cardRepository) FindCardsExpiringBetween(ctx context.Context, start, end time.Time,) ([]models.Card, error) {
 	var cards []models.Card
 
 	err := r.db.WithContext(ctx).
@@ -81,12 +79,8 @@ func (r *cardRepository) FindCardsExpiringBetween(
 
 
 
-func (r *cardRepository) ExpireCardsBetween(
-	ctx context.Context,
-	start, end time.Time,
-) ([]models.Card, error) {
+func (r *cardRepository) ExpireCardsBetween(ctx context.Context, start, end time.Time,) ([]models.Card, error) {
 	var cards []models.Card
-
 	err := r.db.WithContext(ctx).
 		Model(&models.Card{}).
 		Where("expires_at >= ? AND expires_at < ? AND status <> ?", start, end, "expired").
@@ -94,4 +88,18 @@ func (r *cardRepository) ExpireCardsBetween(
 		Scan(&cards).Error
 
 	return cards, err
+}
+
+
+func(r *cardRepository)FindCardsByReference(ctx context.Context, data models.WebhookReq)(models.Card, error){
+    var Card models.Card
+    err := r.db.WithContext(ctx).Where("card_reference = ?", data.CardReference ).First(&Card).Error
+    if err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return models.Card{}, nil
+        }
+        return models.Card{}, err
+    }
+
+    return Card, nil
 }

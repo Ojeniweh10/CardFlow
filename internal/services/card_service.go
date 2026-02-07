@@ -19,7 +19,6 @@ type CardService interface {
 	GetCardById(context.Context, models.GetCardReq)(models.GetCardResp, error)
 	ModifyCardStatus(ctx context.Context, data models.GetCardReq, status string) error
 	TopUpCard(ctx context.Context, data models.TopUpCardReq)(any, error)
-	WebhookTopUp(ctx context.Context, data models.Webhook)(any, error)
 }
 
 type cardService struct {
@@ -29,9 +28,12 @@ type cardService struct {
 	Txnrepo repositories.TransactionRepository
 }
 
-func NewCardService(kycrepo repositories.KycRepository, cardRepo repositories.CardRepository) CardService {
-    return &cardService{kycrepo:kycrepo, cardrepo: cardRepo}
+func NewCardService(userRepo repositories.UserRepository,  kycrepo repositories.KycRepository, cardRepo repositories.CardRepository, txnRepo repositories.TransactionRepository) CardService {
+    return &cardService{userrepo:userRepo, kycrepo:kycrepo, cardrepo: cardRepo, Txnrepo:txnRepo}
 }
+
+var ErrUserNotFound = errors.New("user not found")
+
 
 func (s *cardService) CreateCard(ctx context.Context, data models.CreateCardReq)(any, error){
 	var ExpiryMonth, ExpiryYear string
@@ -242,7 +244,9 @@ func (s *cardService) TopUpCard(ctx context.Context, data models.TopUpCardReq)(a
 	}
 	user, err := s.userrepo.FindByID(ctx, data.Userid)
 	if err != nil {
-		//log err to devs
+		if errors.Is(err, ErrUserNotFound) {
+			return nil, errors.New("user not found")
+		}
 		return nil, errors.New("something went wrong")
 	}
 	cardreq := &models.GetCardReq{
@@ -255,6 +259,9 @@ func (s *cardService) TopUpCard(ctx context.Context, data models.TopUpCardReq)(a
 		return nil, errors.New("something went wrong")
 	}
 	//figure out how to check if card variable that stores struct of models.card is empty
+	if card.ID == uuid.Nil {
+		return nil, errors.New("card not found")
+	}
 	switch card.Status{
 		case "frozen":
 			return nil,  errors.New("card is already frozen")
@@ -270,12 +277,29 @@ func (s *cardService) TopUpCard(ctx context.Context, data models.TopUpCardReq)(a
 	if err != nil {
 		return nil,  errors.New("something went wrong, please try again later")
 	}
+	transaction_reference := GenerateCardReference("tOP-UP")
+	transactions := &models.Transaction{
+		UserID: card.UserID,
+		CardID: card.ID,
+		TransactionReference: transaction_reference,
+		Amount: data.Amount,
+		Currency: "USD",
+		Type: "funding",
+		Direction: "credit",
+		Status: "completed",
+		TransactionTimestamp: time.Now(),
+	}
+	err = s.Txnrepo.CreateTransaction(ctx, transactions)
+	if err != nil{
+		return nil, errors.New("something went wrong, please try again")
+	}
 	Balanceledger := &models.BalanceLedger{
 		CardID: cardid,
+		TransactionID: transactions.ID,
 		EntryType: "card top-up",
 		Amount: data.Amount,
 		FeeCharged : fee,
-		BalanceAfter: card.CurrentBalance + newAmount,
+		BalanceAfter: card.CurrentBalance,
 	}
 	err = s.Txnrepo.CreateLedger(ctx, *Balanceledger)
 	if err != nil {
@@ -293,12 +317,6 @@ func (s *cardService) TopUpCard(ctx context.Context, data models.TopUpCardReq)(a
 	if err != nil {
 		//log error to devs and retry automatically later via a queue to send the email.
 	}
-	
-	return nil, nil
-}
-
-
-func (s *cardService) WebhookTopUp(ctx context.Context, data models.Webhook)(any, error){
 	
 	return nil, nil
 }
