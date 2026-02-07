@@ -137,6 +137,7 @@ type Card struct {
 	SpendingLimitAmount float64 `gorm:"type:decimal(15,2)"`
 
 	CurrentBalance float64 `gorm:"type:decimal(15,2);not null;default:0.00"`
+	HeldBalance float64 `gorm:"type:decimal(15,2);not null;default:0.00"`
 
 	ExpiryMonth string `gorm:"size:2"`
 	ExpiryYear  string `gorm:"size:4"`
@@ -155,34 +156,37 @@ type Card struct {
 
 type Transaction struct {
 	ID uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID uuid.UUID `gorm:"type:uuid;not null;index"`
+	User   User      `gorm:"foreignKey:UserID"`
 
 	CardID uuid.UUID `gorm:"type:uuid;not null;index"`
 	Card   Card      `gorm:"foreignKey:CardID"`
 
-	UserID uuid.UUID `gorm:"type:uuid;not null;index"`
-	User   User      `gorm:"foreignKey:UserID"`
+	TransactionReference string `gorm:"size:100;not null;uniqueIndex"`
+	IdempotencyKey       *string `gorm:"size:100;index"`
 
-	TransactionReference string `gorm:"size:100;uniqueIndex;not null"`
-	IdempotencyKey       *string `gorm:"size:100"`
+	Amount   float64 `gorm:"type:decimal(15,2);not null"`
+	Currency string  `gorm:"size:3;not null"`
 
-	Amount            float64  `gorm:"type:decimal(15,2);not null"`
-	AuthorizedAmount  *float64 `gorm:"type:decimal(15,2)"`
-	CapturedAmount    *float64 `gorm:"type:decimal(15,2)"`
+	AuthorizedAmount float64 `gorm:"type:decimal(15,2)"`
+	CapturedAmount   float64 `gorm:"type:decimal(15,2)"`
 
-	Currency string `gorm:"size:3;not null"`
+	Type      string `gorm:"size:50;not null"` // authorization, capture, funding, refund
+	Direction string `gorm:"size:10;not null"` // debit | credit
+	Status    string `gorm:"size:50;not null"`
 
 	MerchantName    *string `gorm:"size:255"`
 	MerchantMCC     *string `gorm:"size:4"`
 	MerchantCountry *string `gorm:"size:2"`
+	Source          *string `gorm:"size:30"` // card_network, bank_transfer
 
-	Status string `gorm:"size:50"`
-	Type   string `gorm:"size:50"`
+	DeclineReason *string `gorm:"type:text"`
 
-	DeclineReason *string        `gorm:"type:text"`
-	MetadataJSON  datatypes.JSON `gorm:"type:jsonb"`
+	MetadataJSON datatypes.JSON `gorm:"type:jsonb"`
+
 
 	TransactionTimestamp time.Time `gorm:"not null"`
-	CreatedAt            time.Time
+	CreatedAt            time.Time `gorm:"autoCreateTime"`
 }
 
 //
@@ -197,11 +201,12 @@ type BalanceLedger struct {
 	CardID uuid.UUID `gorm:"type:uuid;not null;index"`
 	Card   Card      `gorm:"foreignKey:CardID"`
 
-	TransactionID *uuid.UUID   `gorm:"type:uuid"`
-	Transaction   *Transaction `gorm:"foreignKey:TransactionID"`
+	TransactionID uuid.UUID   `gorm:"type:uuid"`
+	Transaction   Transaction `gorm:"foreignKey:TransactionID"`
 
 	EntryType    string  `gorm:"size:50"`
 	Amount       float64 `gorm:"type:decimal(15,2);not null"`
+	FeeCharged   float64 `gorm:"type:decimal(15,2);not null"`
 	BalanceAfter float64 `gorm:"type:decimal(15,2);not null"`
 
 	CreatedAt time.Time

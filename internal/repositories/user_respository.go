@@ -47,14 +47,14 @@ func (r *userRepository) FindByEmail(ctx context.Context,email string) (*models.
 
     return &user, nil
 }
-
+var ErrUserNotFound = errors.New("user not found")
 func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
     var user models.User
 
     err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
     if err != nil {
         if errors.Is(err, gorm.ErrRecordNotFound) {
-            return nil, nil
+            return nil, ErrUserNotFound
         }
         return nil, err
     }

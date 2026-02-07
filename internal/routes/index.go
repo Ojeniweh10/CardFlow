@@ -14,7 +14,7 @@ func Routes(app *fiber.App, db *gorm.DB) {
     UserRoutes(app, db)
     KycRoutes(app, db)
     CardRoutes(app, db)
-    //TransactionRoutes(app, db)
+    TransactionRoutes(app, db)
 }
 
 
@@ -49,21 +49,27 @@ func KycRoutes(app *fiber.App, db *gorm.DB){
 func CardRoutes(app *fiber.App, db *gorm.DB) {
     cardRepo := repositories.NewCardRepository(db)
     kycRepo := repositories.NewKycRepository(db)
-    cardService := services.NewCardService(kycRepo, cardRepo)
+    userRepo:= repositories.NewUserRepository(db)
+    txnRepo := repositories.NewTransactionRepository(db)
+    cardService := services.NewCardService(userRepo, kycRepo, cardRepo, txnRepo)
     cardHandler := handlers.NewCardHandler(cardService)
 
     api := app.Group("/api/v1/cards")
+    api.Post("/top-up/:id", middleware.JWTProtected(), cardHandler.TopUpCard)
     api.Patch("/:status", middleware.JWTProtected(), cardHandler.ModifyCardStatus)
     api.Get("/:id",middleware.JWTProtected(), cardHandler.FetchCardById)
     api.Get("/", middleware.JWTProtected(), cardHandler.FetchAllCards)
     api.Post("/",middleware.JWTProtected(), cardHandler.CreateCard)
 }
 
-// func TransactionRoutes(app *fiber.App, db *gorm.DB) {
-//     transactionRepo := repositories.NewTransactionRepository(db)
-//     transactionHandler := handlers.NewTransactionHandler(transactionRepo)
+func TransactionRoutes(app *fiber.App, db *gorm.DB) {
+    cardRepo := repositories.NewCardRepository(db)
+    userRepo := repositories.NewUserRepository(db)
+    transactionRepo := repositories.NewTransactionRepository(db)
+    transactionService := services.NewTransactionService(transactionRepo, cardRepo, userRepo)
+    transactionHandler := handlers.NewTransactionHandler(transactionService)
 
-//     api := app.Group("/api/v1/transactions")
-//     api.Post("/", transactionHandler.CreateTransaction)
-//     api.Get("/:id", transactionHandler.GetTransactionById)
-// }
+    api := app.Group("/api/v1/transactions")
+    api.Post("/webhook", transactionHandler.HandleWebhook)// receive authorize and capture
+    //api.Get("/:id", transactionHandler.GetTransactionById)
+}

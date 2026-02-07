@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -103,4 +105,38 @@ type CardEmailPayload struct{
 	FirstName string
 	LastFour string
 	Type string
+}
+
+type TopUpCardReq struct{
+	Userid uuid.UUID
+	Cardid string `json:"card_id"`
+	Amount float64 `json:"amount"`
+}
+
+type TopUpCardResp struct{
+	AccountName string  `json:"account_name"`
+	AccountNumber string `json:"account_number"`
+	Bank string `json:"bank"`
+	Reference string `json:"reference"`
+	Note string `json:"note"`
+}
+
+type merchant struct{
+	Name string `json:"name"`
+	MCC string `json:"mcc"`
+	Country string `json:"country"`
+}
+type WebhookReq struct { 
+	OriginalTransactionID string `json:"original_transaction_id"` //used for card refund events
+	TransactionID string `json:"transaction_id"`
+	CardReference string `json:"card_reference"`
+	Amount float64 `json:"amount"`
+	Currency string `json:"currency"`
+	Type string `json:"type"`
+	Direction string `json:"direction"`
+	Status string `json:"status"`
+	Merchant merchant `json:"merchant"`
+	Network string `json:"network"`
+	Timestamp time.Time `json:"timestamp"`
+	IdempotencyKey string `json:"idempotency_key"`
 }
