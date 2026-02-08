@@ -140,3 +140,23 @@ type WebhookReq struct {
 	Timestamp time.Time `json:"timestamp"`
 	IdempotencyKey string `json:"idempotency_key"`
 }
+
+type GetCardTransactionsReq struct {
+	Userid uuid.UUID
+	Cardid string `json:"card_id"`
+}
+
+type GetCardTransactionsResp struct{
+	Cardid uuid.UUID `json:"card_id"`
+	Transaction_Reference string `json:"transaction_reference"`
+	Amount float64 `json:"amount"`
+	AuthorizedAmount float64 `json:"authorized _amount"`
+	CapturedAmount float64 `json:"captured_amount"`
+	Currency string `json:"currency"`
+	MerchantName *string `json:"merchant_name"`
+	Direction string `json:"direction"`
+	Type string  `json:"type"`
+	Source *string `json:"source"`
+	DeclineReason *string `json:"decline_reason"`
+	CreatedAt time.Time `json:"created_at"`
+}

@@ -71,5 +71,5 @@ func TransactionRoutes(app *fiber.App, db *gorm.DB) {
 
     api := app.Group("/api/v1/transactions")
     api.Post("/webhook", transactionHandler.HandleWebhook)// receive authorize and capture
-    //api.Get("/:id", transactionHandler.GetTransactionById)
+    api.Get("/:id",middleware.JWTProtected(), transactionHandler.GetCardTransactions)
 }

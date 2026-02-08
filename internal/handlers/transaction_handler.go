@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type TransactionHandler struct {
@@ -69,3 +70,26 @@ func(h *TransactionHandler)HandleWebhook(c *fiber.Ctx) error{
     })
 }
 
+func (h *TransactionHandler)GetCardTransactions(c *fiber.Ctx) error{
+    var data models.GetCardTransactionsReq
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+    data.Userid = c.Locals("user_id").(uuid.UUID)
+    data.Cardid = c.Params("id")
+    if data.Cardid == ""{
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "incomplete request data",
+        })
+    }
+    res, err := h.service.GetCardTransactions(ctx, data)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{
+        "success": true,
+        "message": "data processed successfully",
+		"data": res,
+    })
+}

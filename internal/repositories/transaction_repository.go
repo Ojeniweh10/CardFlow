@@ -23,6 +23,7 @@ type TransactionRepository interface{
 	FindTxnByReference(ctx context.Context, reference string)(models.Transaction, error)
 	Update(ctx context.Context, card models.Transaction) error
 	FindByIdempotencyKey(ctx context.Context, idempotencykey string)(models.Transaction, error)
+    FindCardTransactions(ctx context.Context, data models.GetCardTransactionsReq)([]models.Transaction, error)
 }
 
 
@@ -45,6 +46,18 @@ func (r *transactionRepository)FindTxnByReference(ctx context.Context, reference
         return models.Transaction{}, err
     }
 
+    return Txn, nil
+}
+
+func (r *transactionRepository)FindCardTransactions(ctx context.Context, data models.GetCardTransactionsReq)([]models.Transaction, error){
+    var Txn []models.Transaction
+    err := r.db.WithContext(ctx).Where("card_id = ? AND user_id = ? ", data.Cardid, data.Userid).Find(&Txn).Error
+    if err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return []models.Transaction{}, nil
+        }
+        return []models.Transaction{}, err
+    }
     return Txn, nil
 }
 
