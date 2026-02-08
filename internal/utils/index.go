@@ -567,3 +567,25 @@ func ValidateHMAC(rawBody []byte, receivedSignature string) error {
 
 	return nil
 }
+
+
+func SendWithRetry(maxRetries int, delay time.Duration, sendFn func() error,) error {
+    var err error
+    for attempt := 1; attempt <= maxRetries; attempt++ {
+        err = sendFn()
+        if err == nil {
+            return nil
+        }
+
+        log.Printf(
+            "email attempt %d/%d failed: %v",
+            attempt,
+            maxRetries,
+            err,
+        )
+
+        time.Sleep(delay)
+    }
+
+    return err
+}

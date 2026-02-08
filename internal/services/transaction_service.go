@@ -3,9 +3,12 @@ package services
 import (
 	"CardFlow/internal/models"
 	"CardFlow/internal/repositories"
+	"CardFlow/internal/utils"
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -154,15 +157,26 @@ func (s *transactionService) WebhookTransaction(ctx context.Context,data models.
 		_ = s.Txnrepo.CreateLedger(ctx, *ledger)
 
 		// Notify user
-		go SendCardDebitEmail(map[string]string{
+		res := map[string]string{
 			"firstname": user.FirstName,
 			"email":     user.Email,
 			"lastfour":  card.LastFour,
 			"amount":    fmt.Sprintf("%.2f", data.Amount),
 			"fee":       fmt.Sprintf("%.2f", fee),
 			"balance":   fmt.Sprintf("%.2f", card.CurrentBalance),
+		}
+		err = utils.SendWithRetry(3, 2*time.Second, func() error {
+		return SendCardDebitEmail(res)
 		})
-
+		if err != nil {
+			// DO NOT return error
+			// Just log for observability
+			log.Printf(
+				"failed to send top-up email for card %s: %v",
+				card.ID,
+				err,
+			)
+		}
 		return map[string]string{"status": "captured"}, nil
 
 	case "reversal":
@@ -241,13 +255,25 @@ func (s *transactionService) WebhookTransaction(ctx context.Context,data models.
 		}
 		_ = s.Txnrepo.CreateLedger(ctx, *ledger)
 
-		go SendRefundEmail(map[string]string{
+		res := map[string]string{
 			"firstname": user.FirstName,
 			"email":    user.Email,
 			"lastfour": card.LastFour,
 			"amount":   fmt.Sprintf("%.2f", data.Amount),
 			"balance":  fmt.Sprintf("%.2f", card.CurrentBalance),
+		}
+		err = utils.SendWithRetry(3, 2*time.Second, func() error {
+		return SendRefundEmail(res)
 		})
+		if err != nil {
+			// DO NOT return error
+			// Just log for observability
+			log.Printf(
+				"failed to send top-up email for card %s: %v",
+				card.ID,
+				err,
+			)
+		}
 
 		return map[string]string{"status": "refunded"}, nil
 	}

@@ -48,11 +48,11 @@ func SendEmail(data map[string] string) error {
 }
 
 func SendCardTopUpEmail(data map[string]string) error{
-	email := data["Email"]
+	email := data["email"]
 	amount := data["amount"]
 	fee := data["fee"]
-	firstname := data["FirstName"]
-	last_four := data["LastFour"]
+	firstname := data["firstName"]
+	last_four := data["lastFour"]
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
 	senderEmail := config.AppEmail
