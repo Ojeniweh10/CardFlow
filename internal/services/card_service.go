@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -313,10 +314,20 @@ func (s *cardService) TopUpCard(ctx context.Context, data models.TopUpCardReq)(a
 		"amount": fmt.Sprintf("%f",data.Amount),
 		"fee": fmt.Sprintf("%f",fee),
 	}
-	err = SendCardTopUpEmail(res)
+	err = utils.SendWithRetry(3, 2*time.Second, func() error {
+    return SendCardTopUpEmail(res)
+	})
+
 	if err != nil {
-		//log error to devs and retry automatically later via a queue to send the email.
+		// DO NOT return error
+		// Just log for observability
+		log.Printf(
+			"failed to send top-up email for card %s: %v",
+			card.ID,
+			err,
+		)
 	}
+
 	
 	return nil, nil
 }
