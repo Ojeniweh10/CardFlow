@@ -16,6 +16,7 @@ import (
 
 type TransactionService interface{
 	WebhookTransaction(ctx context.Context, data models.WebhookReq)(any, error)
+	GetCardTransactions(ctx context.Context, data models.GetCardTransactionsReq)([]models.GetCardTransactionsResp, error)
 }
 
 type transactionService struct {
@@ -279,4 +280,31 @@ func (s *transactionService) WebhookTransaction(ctx context.Context,data models.
 	}
 
 	return nil, errors.New("unsupported webhook type")
+}
+
+func (s *transactionService) GetCardTransactions(ctx context.Context, data models.GetCardTransactionsReq)([]models.GetCardTransactionsResp, error){
+	var res []models.GetCardTransactionsResp
+	transactions, err := s.Txnrepo.FindCardTransactions(ctx, data)
+	if err != nil {
+		return nil,  errors.New("something went wrong, please try again later")
+	}
+	for _, transaction := range transactions{
+		resp := models.GetCardTransactionsResp{
+			Cardid: transaction.CardID,
+			Transaction_Reference: transaction.TransactionReference,
+			Amount: transaction.Amount,
+			AuthorizedAmount: transaction.AuthorizedAmount,
+			CapturedAmount: transaction.CapturedAmount,
+			Currency:transaction.Currency,
+			MerchantName: transaction.MerchantName,
+			Direction: transaction.Direction,
+			Type: transaction.Type,
+			Source: transaction.Source,
+			DeclineReason: transaction.DeclineReason,
+			CreatedAt: transaction.CreatedAt,
+		}
+		res = append(res, resp)
+	}
+	
+	return res, nil
 }
