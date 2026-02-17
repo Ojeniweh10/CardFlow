@@ -28,7 +28,7 @@ const (
     DocTypeIDDocument    = "id_document"
     DocTypeProofOfAddr   = "proof_of_address"
 	DocsUploaded 		 = "documents_uploaded"
-	UnderReview 		 = "under_review"
+	Verified		 = "verified"
 )
 
 func (s *kycService) Uploadimage(ctx context.Context,data models.KycProfile) error {
@@ -116,7 +116,7 @@ func (s *kycService) UploadProofOfAddress(ctx context.Context, data models.KycDo
 			return err
 		}
 
-		sub.Status = UnderReview
+		sub.Status = Verified
 		if err := repo.UpdateKycSubmission(sub); err != nil {
 			return err
 		}

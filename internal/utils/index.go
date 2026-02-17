@@ -186,17 +186,10 @@ func GenerateTotp(secret string) (string, error){
 func EncryptBase64Document(base64File string,) (encryptedBase64 string, mimeType string, err error) {
 	// Expected: data:<mime>;base64,<data>
 	parts := strings.SplitN(base64File, ",", 2)
-	if len(parts) != 2 {
-		return "", "", errors.New("invalid base64 format")
-	}
-
 	// Extract MIME type
 	meta := parts[0]
 	start := strings.Index(meta, ":")
 	end := strings.Index(meta, ";")
-	if start == -1 || end == -1 {
-		return "", "", errors.New("invalid base64 metadata")
-	}
 
 	mimeType = meta[start+1 : end]
 

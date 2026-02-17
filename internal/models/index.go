@@ -20,6 +20,26 @@ type LoginReq struct {
 	Password string `json:"password"`
 }
 
+type ForgotPwdReq struct {
+	Email string `json:"email"`
+}
+
+type ForgotPwdOtp struct{
+	Otp string  `json:"otp"`
+	Email string `json:"email"`
+}
+
+type ResetPasswordReq struct{
+	Email string `json:"email"`
+	Password string `json:"password"`
+}
+
+type ChangePasswordReq struct{
+	Userid uuid.UUID
+	OldPassword string `json:"old_password"`
+	NewPassword string 	`json:"new_password"`
+}
+
 type MFALoginReq struct  {
 	Email    string `json:"email"`
 	TOTPCode string `json:"totp_code"`

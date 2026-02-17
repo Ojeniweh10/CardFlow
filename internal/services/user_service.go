@@ -20,6 +20,10 @@ type UserService interface {
 	VerifyOtp(ctx context.Context, userID uuid.UUID, otp string) error
 	EnableMFA(ctx context.Context, userID uuid.UUID)(string, error)
 	VerifyMFA(ctx context.Context, userID uuid.UUID, data string) error
+	ForgotPassword(ctx context.Context, data models.ForgotPwdReq) error
+	ForgotPwdOtp(ctx context.Context, data models.ForgotPwdOtp)error
+	ResetPassword(ctx context.Context, data models.ResetPasswordReq)error
+	ChangePassword(ctx context.Context, data models.ChangePasswordReq)error
 }
 
 type userService struct {
@@ -204,6 +208,102 @@ func (s *userService) VerifyMFA(ctx context.Context, userID uuid.UUID, data stri
 	err = s.repo.Update(ctx, user)
 	if err != nil {
 		return errors.New("something went wrong, please try again later")
+	}
+	return nil
+}
+
+
+func (s *userService)ForgotPassword(ctx context.Context, data models.ForgotPwdReq) error{
+	User, err := s.repo.FindByEmail(ctx, data.Email)
+	if User == nil {
+		return errors.New("email doesn't exist")
+	}
+	if err != nil {
+		log.Println(err)
+		return errors.New("something went wrong, please try again later")
+	}
+	otp, err := utils.GenerateOTP()
+	if err != nil {
+		return errors.New("something went wrong, please try again later")
+	}
+	err = utils.SendEmailOTP(data.Email, otp)
+	if err != nil {
+		return errors.New("failed to send OTP email")
+	}
+	err = s.repo.UpdateUserOTP(ctx, User.ID, otp)
+	if err != nil {
+		return errors.New("something went wrong, please try again later")
+	}
+
+	return nil
+}
+
+func (s *userService)ForgotPwdOtp(ctx context.Context, data models.ForgotPwdOtp)error{
+	user,  err := s.repo.FindByEmail(ctx, data.Email)
+	if err != nil {
+		return errors.New("something went wrong, please try again later")
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+
+	if user.OTP != data.Otp {
+		return errors.New("invalid OTP")
+	}
+
+	if user.OTPExpiresAt.IsZero() || user.OTPExpiresAt.Before(time.Now()) {
+		return errors.New("OTP has expired")
+	}
+
+	user.OTP = ""
+	user.OTPExpiresAt = time.Time{}
+
+	err = s.repo.Update(ctx, user)
+	if err != nil {
+		return errors.New("something went wrong, please try again later")
+	}
+	return nil
+}
+
+
+func(s *userService)ResetPassword(ctx context.Context, data models.ResetPasswordReq)error{
+	user,  err := s.repo.FindByEmail(ctx, data.Email)
+	if err != nil {
+		return errors.New("something went wrong, please try again later")
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+	hashedPassword, err := utils.Hash(data.Password)
+	if err != nil {
+		//log the error to notify devs then return a generic error message
+		return errors.New("something went wrong, please try again later")
+	}
+	user.PasswordHash = hashedPassword
+	err = s.repo.Update(ctx, user)
+	if err != nil {
+		return errors.New("something went wrong, please try again later")
+	}
+
+	return nil
+
+}
+
+func(s *userService)ChangePassword(ctx context.Context, data models.ChangePasswordReq)error{
+	user, err := s.repo.FindByID(ctx, data.Userid)
+	if err != nil{
+		return errors.New("something went wrong, please try again later")
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+	oldhash, err := utils.Hash(data.OldPassword)
+	if err != nil {
+		//log the error to notify devs then return a generic error message
+		return errors.New("something went wrong, please try again later")
+	}
+	if oldhash != user.PasswordHash{
+		return errors.New("old password")
 	}
 	return nil
 }

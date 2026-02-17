@@ -210,3 +210,110 @@ func (h *UserHandler) VerifyMFA(c *fiber.Ctx) error{
         "message": "multi-factor authentication enabled",
     })
 }
+
+func(h *UserHandler)ForgotPassword(c *fiber.Ctx)error{
+    var data models.ForgotPwdReq
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+    if err := c.BodyParser(&data); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "invalid request body",
+        })
+    }
+    if data.Email == ""{
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "incomplete data",
+        })
+    }
+    err := h.service.ForgotPassword(ctx, data)
+    if err != nil{
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{
+        "success": true,
+        "message": "otp has been sent to your email",
+    })
+}
+
+
+func(h *UserHandler)ForgotPwdOtp(c *fiber.Ctx)error{
+    var data models.ForgotPwdOtp
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+    if err := c.BodyParser(&data); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "invalid request body",
+        })
+    }
+    if data.Email == "" || data.Otp == "" {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "incomplete data",
+        })
+    }
+    err := h.service.ForgotPwdOtp(ctx, data)
+    if err != nil{
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{
+        "success": true,
+        "message": "otp has been verified",
+    })
+
+}
+
+func(h *UserHandler)ResetPassword(c *fiber.Ctx) error{
+    var data models.ResetPasswordReq
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+    if err := c.BodyParser(&data); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "invalid request body",
+        })
+    }
+    if data.Email == "" || data.Password == "" {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "incomplete data",
+        })
+    }
+    err := h.service.ResetPassword(ctx, data)
+    if err != nil{
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{
+        "success": true,
+        "message": "password reset successful",
+    })
+}
+
+func(h *UserHandler)ChangePassword(c *fiber.Ctx) error{
+    var data models.ChangePasswordReq
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+    if err := c.BodyParser(&data); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "invalid request body",
+        })
+    }
+    data.Userid = c.Locals("user_id").(uuid.UUID)
+    if data.OldPassword == "" || data.NewPassword == ""{
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "incomplete data",
+        })
+    }
+    err := h.service.ChangePassword(ctx, data)
+    if err != nil{
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{
+        "success": true,
+        "message": "password reset successful",
+    })
+}

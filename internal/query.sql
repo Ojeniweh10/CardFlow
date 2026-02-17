@@ -178,6 +178,7 @@ CREATE TABLE balance_ledgers (
 CREATE INDEX idx_ledger_card_id      ON balance_ledgers(card_id);
 CREATE INDEX idx_ledger_created_at   ON balance_ledgers(created_at);
 
+
 -- ============================================================
 -- Audit Logs
 -- ============================================================
